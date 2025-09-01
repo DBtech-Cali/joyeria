@@ -1,946 +1,1037 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, History, TrendingUp, TrendingDown, Edit3, Save, X, Eye } from 'lucide-react';
-
-const AmatheaApp = () => {
-  // Estados principales
-  const [currentView, setCurrentView] = useState('catalog');
-  const [passwordInput, setPasswordInput] = useState('');
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [pendingView, setPendingView] = useState('');
-  const [joyas, setJoyas] = useState([]);
-  const [egresos, setEgresos] = useState([]);
-  const [selectedJoya, setSelectedJoya] = useState(null);
-  const [editingJoya, setEditingJoya] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEgresoModal, setShowEgresoModal] = useState(false);
-  const [showSaleModal, setShowSaleModal] = useState(false);
-  const [compradorNombre, setCompradorNombre] = useState('');
-
-  // Estados para formularios
-  const [newJoya, setNewJoya] = useState({
-    nombre: '',
-    peso: '',
-    color: '',
-    foto: '',
-    joyero: 'joyero1',
-    precio: '',
-    estado: 'Catálogo',
-    tipo: 'arete',
-    comprador: '',
-    distribucion: { joyero: 35, taller: 35, formacion: 30 }
-  });
-
-  const [newEgreso, setNewEgreso] = useState({
-    nombre: '',
-    precio: '',
-    categoria: 'joyero',
-    joyeroNombre: ''
-  });
-
-  const joyeros = Array.from({length: 20}, (_, i) => `joyero${i + 1}`);
-  const tipos = ['arete', 'anillo', 'pulsera', 'dije'];
-  const estados = ['Catálogo', 'Venta', 'Alquiler'];
-
-  // Funciones de autenticación
-  const checkPassword = (targetView) => {
-    if (passwordInput === 'mompox') {
-      setCurrentView(targetView);
-      setShowPasswordModal(false);
-      setPasswordInput('');
-    } else {
-      alert('Contraseña incorrecta');
-    }
-  };
-
-  const requestAccess = (view) => {
-    setPendingView(view);
-    setShowPasswordModal(true);
-  };
-
-  // Funciones CRUD para joyas
-  const addJoya = () => {
-    if (!newJoya.nombre || !newJoya.precio) {
-      alert('Por favor completa los campos obligatorios');
-      return;
-    }
-    
-    const joya = {
-      ...newJoya,
-      id: Date.now(),
-      precio: parseFloat(newJoya.precio),
-      peso: parseFloat(newJoya.peso) || 0,
-      fechaCreacion: new Date().toISOString()
-    };
-    
-    setJoyas(prev => [...prev, joya]);
-    setNewJoya({
-      nombre: '',
-      peso: '',
-      color: '',
-      foto: '',
-      joyero: 'joyero1',
-      precio: '',
-      estado: 'Catálogo',
-      tipo: 'arete',
-      comprador: '',
-      distribucion: { joyero: 35, taller: 35, formacion: 30 }
-    });
-    setShowAddModal(false);
-  };
-
-  const updateJoya = (id, updates) => {
-    setJoyas(prev => prev.map(joya => 
-      joya.id === id ? { ...joya, ...updates } : joya
-    ));
-  };
-
-  const sellJoya = (joya) => {
-    if (!compradorNombre.trim()) {
-      alert('Por favor ingresa el nombre del comprador');
-      return;
-    }
-    
-    updateJoya(joya.id, { 
-      estado: 'Venta', 
-      comprador: compradorNombre,
-      fechaVenta: new Date().toISOString()
-    });
-    setShowSaleModal(false);
-    setCompradorNombre('');
-    setSelectedJoya(null);
-  };
-
-  // Funciones para egresos
-  const addEgreso = () => {
-    if (!newEgreso.nombre || !newEgreso.precio) {
-      alert('Por favor completa todos los campos');
-      return;
-    }
-
-    const egreso = {
-      ...newEgreso,
-      id: Date.now(),
-      precio: parseFloat(newEgreso.precio),
-      fecha: new Date().toISOString()
-    };
-
-    setEgresos(prev => [...prev, egreso]);
-    setNewEgreso({
-      nombre: '',
-      precio: '',
-      categoria: 'joyero',
-      joyeroNombre: ''
-    });
-    setShowEgresoModal(false);
-  };
-
-  // Cálculos financieros
-  const calcularIngresos = () => {
-    const joyasVendidas = joyas.filter(joya => joya.estado === 'Venta');
-    let totales = { joyero: 0, taller: 0, formacion: 0 };
-    
-    joyasVendidas.forEach(joya => {
-      const dist = joya.distribucion;
-      totales.joyero += (joya.precio * dist.joyero) / 100;
-      totales.taller += (joya.precio * dist.taller) / 100;
-      totales.formacion += (joya.precio * dist.formacion) / 100;
-    });
-    
-    return totales;
-  };
-
-  const calcularEgresos = () => {
-    let totales = { joyero: 0, taller: 0, formacion: 0 };
-    
-    egresos.forEach(egreso => {
-      totales[egreso.categoria] += egreso.precio;
-    });
-    
-    return totales;
-  };
-
-  // Componente Modal de Contraseña
-  const PasswordModal = () => (
-    showPasswordModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-lg shadow-lg">
-          <h3 className="text-lg font-bold mb-4">Ingresa la contraseña</h3>
-          <input
-            type="password"
-            value={passwordInput}
-            onChange={(e) => setPasswordInput(e.target.value)}
-            className="border rounded px-3 py-2 w-full mb-4"
-            placeholder="Contraseña"
-            onKeyPress={(e) => e.key === 'Enter' && checkPassword(pendingView)}
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={() => checkPassword(pendingView)}
-              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-            >
-              Acceder
-            </button>
-            <button
-              onClick={() => {
-                setShowPasswordModal(false);
-                setPasswordInput('');
-              }}
-              className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  );
-
-  // Componente Header
-  const Header = () => (
-    <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 mb-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
-            💎
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Amathea</h1>
-            <p className="text-sm opacity-90">– filigrana con corazón ♥</p>
-          </div>
-        </div>
-        <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-          <span className="text-2xl">✨</span>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Componente Navegación
-  const Navigation = () => (
-    <div className="bg-white shadow-md mb-6">
-      <div className="flex justify-center gap-4 p-4">
-        <button
-          onClick={() => setCurrentView('catalog')}
-          className={`flex items-center gap-2 px-4 py-2 rounded ${
-            currentView === 'catalog' ? 'bg-purple-600 text-white' : 'bg-gray-200'
-          }`}
-        >
-          💍 Catálogo
-        </button>
-        <button
-          onClick={() => requestAccess('add')}
-          className="flex items-center gap-2 px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-        >
-          <Plus size={16} /> Agregar Joya
-        </button>
-        <button
-          onClick={() => requestAccess('history')}
-          className="flex items-center gap-2 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-        >
-          <History size={16} /> Historial
-        </button>
-        <button
-          onClick={() => requestAccess('income')}
-          className="flex items-center gap-2 px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700"
-        >
-          <TrendingUp size={16} /> Ingresos
-        </button>
-        <button
-          onClick={() => requestAccess('expenses')}
-          className="flex items-center gap-2 px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
-        >
-          <TrendingDown size={16} /> Egresos
-        </button>
-      </div>
-    </div>
-  );
-
-  // Vista Catálogo
-  const CatalogView = () => {
-    const joyasCatalogo = joyas.filter(joya => joya.estado === 'Catálogo');
-    
-    return (
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Joyas Disponibles</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {joyasCatalogo.map(joya => (
-            <div key={joya.id} className="bg-white rounded-lg shadow-md p-4 border">
-              <div className="h-48 bg-gray-200 rounded mb-4 flex items-center justify-center">
-                {joya.foto ? (
-                  <img src={joya.foto} alt={joya.nombre} className="max-h-full max-w-full object-cover rounded" />
-                ) : (
-                  <span className="text-gray-500">Sin imagen</span>
-                )}
-              </div>
-              <h3 className="font-bold text-lg mb-2">{joya.nombre}</h3>
-              <p className="text-gray-600 mb-1">Peso: {joya.peso}g</p>
-              <p className="text-2xl font-bold text-green-600 mb-4">${joya.precio?.toLocaleString()}</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSelectedJoya(joya)}
-                  className="flex-1 bg-purple-600 text-white py-2 rounded hover:bg-purple-700 flex items-center justify-center gap-2"
-                >
-                  <Eye size={16} /> Ver
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedJoya(joya);
-                    setShowSaleModal(true);
-                  }}
-                  className="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700"
-                >
-                  Vender
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {joyasCatalogo.length === 0 && (
-          <p className="text-center text-gray-500 py-8">No hay joyas disponibles en el catálogo</p>
-        )}
-      </div>
-    );
-  };
-
-  // Modal de detalle de joya
-  const JoyaDetailModal = () => (
-    selectedJoya && !showSaleModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-xl font-bold">{selectedJoya.nombre}</h3>
-            <button
-              onClick={() => setSelectedJoya(null)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          <div className="h-48 bg-gray-200 rounded mb-4 flex items-center justify-center">
-            {selectedJoya.foto ? (
-              <img src={selectedJoya.foto} alt={selectedJoya.nombre} className="max-h-full max-w-full object-cover rounded" />
-            ) : (
-              <span className="text-gray-500">Sin imagen</span>
-            )}
-          </div>
-          <div className="space-y-2">
-            <p><strong>Tipo:</strong> {selectedJoya.tipo}</p>
-            <p><strong>Color:</strong> {selectedJoya.color}</p>
-            <p><strong>Peso:</strong> {selectedJoya.peso}g</p>
-            <p><strong>Joyero:</strong> {selectedJoya.joyero}</p>
-            <p><strong>Precio:</strong> ${selectedJoya.precio?.toLocaleString()}</p>
-          </div>
-        </div>
-      </div>
-    )
-  );
-
-  // Modal de venta
-  const SaleModal = () => (
-    showSaleModal && selectedJoya && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-          <h3 className="text-xl font-bold mb-4">Vender: {selectedJoya.nombre}</h3>
-          <p className="mb-4">Precio: ${selectedJoya.precio?.toLocaleString()}</p>
-          <input
-            type="text"
-            value={compradorNombre}
-            onChange={(e) => setCompradorNombre(e.target.value)}
-            className="border rounded px-3 py-2 w-full mb-4"
-            placeholder="Nombre del comprador"
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={() => sellJoya(selectedJoya)}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-            >
-              Confirmar Venta
-            </button>
-            <button
-              onClick={() => {
-                setShowSaleModal(false);
-                setCompradorNombre('');
-              }}
-              className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  );
-
-  // Vista Agregar Joya
-  const AddJoyaView = () => (
-    <div className="max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Agregar Nueva Joya</h2>
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Nombre *</label>
-            <input
-              type="text"
-              value={newJoya.nombre}
-              onChange={(e) => setNewJoya({...newJoya, nombre: e.target.value})}
-              className="border rounded px-3 py-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Peso (g)</label>
-            <input
-              type="number"
-              value={newJoya.peso}
-              onChange={(e) => setNewJoya({...newJoya, peso: e.target.value})}
-              className="border rounded px-3 py-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Color</label>
-            <input
-              type="text"
-              value={newJoya.color}
-              onChange={(e) => setNewJoya({...newJoya, color: e.target.value})}
-              className="border rounded px-3 py-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">URL de la Foto</label>
-            <input
-              type="url"
-              value={newJoya.foto}
-              onChange={(e) => setNewJoya({...newJoya, foto: e.target.value})}
-              className="border rounded px-3 py-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Joyero</label>
-            <select
-              value={newJoya.joyero}
-              onChange={(e) => setNewJoya({...newJoya, joyero: e.target.value})}
-              className="border rounded px-3 py-2 w-full"
-            >
-              {joyeros.map(joyero => (
-                <option key={joyero} value={joyero}>{joyero}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Precio *</label>
-            <input
-              type="number"
-              value={newJoya.precio}
-              onChange={(e) => setNewJoya({...newJoya, precio: e.target.value})}
-              className="border rounded px-3 py-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Estado</label>
-            <select
-              value={newJoya.estado}
-              onChange={(e) => setNewJoya({...newJoya, estado: e.target.value})}
-              className="border rounded px-3 py-2 w-full"
-            >
-              {estados.map(estado => (
-                <option key={estado} value={estado}>{estado}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Tipo</label>
-            <select
-              value={newJoya.tipo}
-              onChange={(e) => setNewJoya({...newJoya, tipo: e.target.value})}
-              className="border rounded px-3 py-2 w-full"
-            >
-              {tipos.map(tipo => (
-                <option key={tipo} value={tipo}>{tipo}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div className="mt-6 flex gap-2">
-          <button
-            onClick={addJoya}
-            className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
-          >
-            Agregar Joya
-          </button>
-          <button
-            onClick={() => setCurrentView('catalog')}
-            className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
-          >
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Vista Historial
-  const HistoryView = () => (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Historial de Joyas</h2>
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Nombre</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Tipo</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Joyero</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Precio</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Estado</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Comprador</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {joyas.map(joya => (
-                <tr key={joya.id}>
-                  <td className="px-4 py-3">
-                    {editingJoya === joya.id ? (
-                      <input
-                        type="text"
-                        value={joya.nombre}
-                        onChange={(e) => updateJoya(joya.id, {nombre: e.target.value})}
-                        className="border rounded px-2 py-1 text-sm"
-                      />
-                    ) : (
-                      joya.nombre
-                    )}
-                  </td>
-                  <td className="px-4 py-3">{joya.tipo}</td>
-                  <td className="px-4 py-3">
-                    {editingJoya === joya.id ? (
-                      <select
-                        value={joya.joyero}
-                        onChange={(e) => updateJoya(joya.id, {joyero: e.target.value})}
-                        className="border rounded px-2 py-1 text-sm"
-                      >
-                        {joyeros.map(joyero => (
-                          <option key={joyero} value={joyero}>{joyero}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      joya.joyero
-                    )}
-                  </td>
-                  <td className="px-4 py-3">${joya.precio?.toLocaleString()}</td>
-                  <td className="px-4 py-3">
-                    {editingJoya === joya.id ? (
-                      <select
-                        value={joya.estado}
-                        onChange={(e) => updateJoya(joya.id, {estado: e.target.value})}
-                        className="border rounded px-2 py-1 text-sm"
-                      >
-                        {estados.map(estado => (
-                          <option key={estado} value={estado}>{estado}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        joya.estado === 'Venta' ? 'bg-green-100 text-green-800' :
-                        joya.estado === 'Catálogo' ? 'bg-blue-100 text-blue-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {joya.estado}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {editingJoya === joya.id && joya.estado === 'Venta' ? (
-                      <input
-                        type="text"
-                        value={joya.comprador || ''}
-                        onChange={(e) => updateJoya(joya.id, {comprador: e.target.value})}
-                        className="border rounded px-2 py-1 text-sm"
-                        placeholder="Nombre comprador"
-                      />
-                    ) : (
-                      joya.comprador || '-'
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {editingJoya === joya.id ? (
-                      <button
-                        onClick={() => setEditingJoya(null)}
-                        className="text-green-600 hover:text-green-800"
-                      >
-                        <Save size={16} />
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setEditingJoya(joya.id)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <Edit3 size={16} />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {joyas.length === 0 && (
-          <p className="text-center text-gray-500 py-8">No hay joyas registradas</p>
-        )}
-      </div>
-    </div>
-  );
-
-  // Vista Ingresos
-  const IncomeView = () => {
-    const joyasVendidas = joyas.filter(joya => joya.estado === 'Venta');
-    const ingresos = calcularIngresos();
-    const egresosCalculados = calcularEgresos();
-    const balances = {
-      joyero: ingresos.joyero - egresosCalculados.joyero,
-      taller: ingresos.taller - egresosCalculados.taller,
-      formacion: ingresos.formacion - egresosCalculados.formacion
-    };
-
-    return (
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Dashboard de Ingresos</h2>
-        
-        {/* Resumen financiero */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-green-100 p-4 rounded-lg">
-            <h3 className="font-bold text-green-800">Joyero</h3>
-            <p className="text-2xl font-bold text-green-600">${ingresos.joyero.toLocaleString()}</p>
-            <p className="text-sm text-green-700">Ingresos</p>
-            <p className="text-sm text-red-600">-${egresosCalculados.joyero.toLocaleString()}</p>
-            <p className={`text-lg font-bold ${balances.joyero >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              Balance: ${balances.joyero.toLocaleString()}
-            </p>
-          </div>
-          <div className="bg-blue-100 p-4 rounded-lg">
-            <h3 className="font-bold text-blue-800">Taller</h3>
-            <p className="text-2xl font-bold text-blue-600">${ingresos.taller.toLocaleString()}</p>
-            <p className="text-sm text-blue-700">Ingresos</p>
-            <p className="text-sm text-red-600">-${egresosCalculados.taller.toLocaleString()}</p>
-            <p className={`text-lg font-bold ${balances.taller >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              Balance: ${balances.taller.toLocaleString()}
-            </p>
-          </div>
-          <div className="bg-purple-100 p-4 rounded-lg">
-            <h3 className="font-bold text-purple-800">Formación</h3>
-            <p className="text-2xl font-bold text-purple-600">${ingresos.formacion.toLocaleString()}</p>
-            <p className="text-sm text-purple-700">Ingresos</p>
-            <p className="text-sm text-red-600">-${egresosCalculados.formacion.toLocaleString()}</p>
-            <p className={`text-lg font-bold ${balances.formacion >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              Balance: ${balances.formacion.toLocaleString()}
-            </p>
-          </div>
-        </div>
-
-        {/* Lista de joyas vendidas */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <h3 className="text-lg font-bold p-4 bg-gray-50">Joyas Vendidas</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Joya</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Comprador</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Precio</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Joyero</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Taller</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Formación</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Distribución</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {joyasVendidas.map(joya => {
-                  const dist = joya.distribucion;
-                  return (
-                    <tr key={joya.id}>
-                      <td className="px-4 py-3">{joya.nombre}</td>
-                      <td className="px-4 py-3">{joya.comprador}</td>
-                      <td className="px-4 py-3">${joya.precio?.toLocaleString()}</td>
-                      <td className="px-4 py-3">${((joya.precio * dist.joyero) / 100).toLocaleString()}</td>
-                      <td className="px-4 py-3">${((joya.precio * dist.taller) / 100).toLocaleString()}</td>
-                      <td className="px-4 py-3">${((joya.precio * dist.formacion) / 100).toLocaleString()}</td>
-                      <td className="px-4 py-3">
-                        {editingJoya === joya.id ? (
-                          <div className="flex gap-1 text-xs">
-                            <input
-                              type="number"
-                              value={dist.joyero}
-                              onChange={(e) => updateJoya(joya.id, {
-                                distribucion: {
-                                  ...dist,
-                                  joyero: parseInt(e.target.value) || 0
-                                }
-                              })}
-                              className="border rounded px-1 py-1 w-12"
-                            />%
-                            <input
-                              type="number"
-                              value={dist.taller}
-                              onChange={(e) => updateJoya(joya.id, {
-                                distribucion: {
-                                  ...dist,
-                                  taller: parseInt(e.target.value) || 0
-                                }
-                              })}
-                              className="border rounded px-1 py-1 w-12"
-                            />%
-                            <input
-                              type="number"
-                              value={dist.formacion}
-                              onChange={(e) => updateJoya(joya.id, {
-                                distribucion: {
-                                  ...dist,
-                                  formacion: parseInt(e.target.value) || 0
-                                }
-                              })}
-                              className="border rounded px-1 py-1 w-12"
-                            />%
-                            <button
-                              onClick={() => setEditingJoya(null)}
-                              className="text-green-600 ml-1"
-                            >
-                              <Save size={12} />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs">{dist.joyero}%/{dist.taller}%/{dist.formacion}%</span>
-                            <button
-                              onClick={() => setEditingJoya(joya.id)}
-                              className="text-blue-600 ml-1"
-                            >
-                              <Edit3 size={12} />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {joyasVendidas.length === 0 && (
-            <p className="text-center text-gray-500 py-8">No hay joyas vendidas</p>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Vista Egresos
-  const ExpensesView = () => {
-    const egresosCalculados = calcularEgresos();
-    const egresosPorJoyero = {};
-    
-    egresos.forEach(egreso => {
-      if (egreso.categoria === 'joyero' && egreso.joyeroNombre) {
-        if (!egresosPorJoyero[egreso.joyeroNombre]) {
-          egresosPorJoyero[egreso.joyeroNombre] = 0;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amathea - Sistema de Gestión de Joyería</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
         }
-        egresosPorJoyero[egreso.joyeroNombre] += egreso.precio;
-      }
-    });
-
-    return (
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Egresos</h2>
-        
-        <div className="mb-6">
-          <button
-            onClick={() => setShowEgresoModal(true)}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-          >
-            Agregar Egreso
-          </button>
-        </div>
-
-        {/* Resumen de egresos */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-red-100 p-4 rounded-lg">
-            <h3 className="font-bold text-red-800">Joyero</h3>
-            <p className="text-2xl font-bold text-red-600">${egresosCalculados.joyero.toLocaleString()}</p>
-          </div>
-          <div className="bg-red-100 p-4 rounded-lg">
-            <h3 className="font-bold text-red-800">Taller</h3>
-            <p className="text-2xl font-bold text-red-600">${egresosCalculados.taller.toLocaleString()}</p>
-          </div>
-          <div className="bg-red-100 p-4 rounded-lg">
-            <h3 className="font-bold text-red-800">Formación</h3>
-            <p className="text-2xl font-bold text-red-600">${egresosCalculados.formacion.toLocaleString()}</p>
-          </div>
-        </div>
-
-        {/* Egresos por joyero */}
-        {Object.keys(egresosPorJoyero).length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-            <h3 className="text-lg font-bold mb-4">Egresos por Joyero</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {Object.entries(egresosPorJoyero).map(([joyero, total]) => (
-                <div key={joyero} className="bg-gray-50 p-3 rounded">
-                  <p className="font-medium">{joyero}</p>
-                  <p className="text-lg font-bold text-red-600">${total.toLocaleString()}</p>
+        .hidden { display: none !important; }
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <div class="gradient-bg text-white p-6 mb-6">
+        <div class="flex items-center justify-between max-w-6xl mx-auto">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                    💎
                 </div>
-              ))}
+                <div>
+                    <h1 class="text-3xl font-bold">Amathea</h1>
+                    <p class="text-sm opacity-90">– filigrana con corazón ♥</p>
+                </div>
             </div>
-          </div>
-        )}
-
-        {/* Lista de todos los egresos */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <h3 className="text-lg font-bold p-4 bg-gray-50">Historial de Egresos</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Concepto</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Categoría</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Joyero</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Monto</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Fecha</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {egresos.map(egreso => (
-                  <tr key={egreso.id}>
-                    <td className="px-4 py-3">{egreso.nombre}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        egreso.categoria === 'joyero' ? 'bg-green-100 text-green-800' :
-                        egreso.categoria === 'taller' ? 'bg-blue-100 text-blue-800' :
-                        'bg-purple-100 text-purple-800'
-                      }`}>
-                        {egreso.categoria}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">{egreso.joyeroNombre || '-'}</td>
-                    <td className="px-4 py-3 font-bold text-red-600">${egreso.precio.toLocaleString()}</td>
-                    <td className="px-4 py-3">{new Date(egreso.fecha).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {egresos.length === 0 && (
-            <p className="text-center text-gray-500 py-8">No hay egresos registrados</p>
-          )}
+            <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <span class="text-2xl">✨</span>
+            </div>
         </div>
-      </div>
-    );
-  };
-
-  // Modal para agregar egreso
-  const EgresoModal = () => (
-    showEgresoModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-          <h3 className="text-xl font-bold mb-4">Agregar Egreso</h3>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Concepto</label>
-              <input
-                type="text"
-                value={newEgreso.nombre}
-                onChange={(e) => setNewEgreso({...newEgreso, nombre: e.target.value})}
-                className="border rounded px-3 py-2 w-full"
-                placeholder="Descripción del gasto"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Monto</label>
-              <input
-                type="number"
-                value={newEgreso.precio}
-                onChange={(e) => setNewEgreso({...newEgreso, precio: e.target.value})}
-                className="border rounded px-3 py-2 w-full"
-                placeholder="0"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Categoría</label>
-              <select
-                value={newEgreso.categoria}
-                onChange={(e) => setNewEgreso({...newEgreso, categoria: e.target.value})}
-                className="border rounded px-3 py-2 w-full"
-              >
-                <option value="joyero">Joyero</option>
-                <option value="taller">Taller</option>
-                <option value="formacion">Formación</option>
-              </select>
-            </div>
-            
-            {newEgreso.categoria === 'joyero' && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Nombre del Joyero</label>
-                <input
-                  type="text"
-                  value={newEgreso.joyeroNombre}
-                  onChange={(e) => setNewEgreso({...newEgreso, joyeroNombre: e.target.value})}
-                  className="border rounded px-3 py-2 w-full"
-                  placeholder="Nombre completo"
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="flex gap-2 mt-6">
-            <button
-              onClick={addEgreso}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-            >
-              Agregar Egreso
-            </button>
-            <button
-              onClick={() => {
-                setShowEgresoModal(false);
-                setNewEgreso({
-                  nombre: '',
-                  precio: '',
-                  categoria: 'joyero',
-                  joyeroNombre: ''
-                });
-              }}
-              className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  );
-
-  // Renderizado principal
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <Header />
-      <div className="container mx-auto px-4">
-        <Navigation />
-        
-        <div className="pb-8">
-          {currentView === 'catalog' && <CatalogView />}
-          {currentView === 'add' && <AddJoyaView />}
-          {currentView === 'history' && <HistoryView />}
-          {currentView === 'income' && <IncomeView />}
-          {currentView === 'expenses' && <ExpensesView />}
-        </div>
-      </div>
-
-      {/* Modales */}
-      <PasswordModal />
-      <JoyaDetailModal />
-      <SaleModal />
-      <EgresoModal />
     </div>
-  );
-};
 
-export default AmatheaApp;
+    <!-- Navigation -->
+    <div class="bg-white shadow-md mb-6">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-center gap-4 p-4 flex-wrap">
+                <button onclick="showView('catalog')" id="btn-catalog" class="btn-nav bg-purple-600 text-white">
+                    💍 Catálogo
+                </button>
+                <button onclick="requestAccess('add')" class="btn-nav bg-green-600 text-white hover:bg-green-700">
+                    <i class="fas fa-plus"></i> Agregar Joya
+                </button>
+                <button onclick="requestAccess('history')" class="btn-nav bg-blue-600 text-white hover:bg-blue-700">
+                    <i class="fas fa-history"></i> Historial
+                </button>
+                <button onclick="requestAccess('income')" class="btn-nav bg-emerald-600 text-white hover:bg-emerald-700">
+                    <i class="fas fa-chart-line"></i> Ingresos
+                </button>
+                <button onclick="requestAccess('expenses')" class="btn-nav bg-red-600 text-white hover:bg-red-700">
+                    <i class="fas fa-chart-line-down"></i> Egresos
+                </button>
+                <button onclick="requestAccess('balance')" class="btn-nav bg-yellow-600 text-white hover:bg-yellow-700">
+                    <i class="fas fa-balance-scale"></i> Balance
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-6xl mx-auto px-4 pb-8">
+        <!-- Vista Catálogo -->
+        <div id="view-catalog" class="view">
+            <h2 class="text-2xl font-bold mb-4">Joyas Disponibles</h2>
+            <div id="catalog-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Las joyas se cargarán dinámicamente -->
+            </div>
+            <div id="empty-catalog" class="text-center text-gray-500 py-8 hidden">
+                No hay joyas disponibles en el catálogo
+            </div>
+        </div>
+
+        <!-- Vista Agregar Joya -->
+        <div id="view-add" class="view hidden">
+            <div class="max-w-2xl mx-auto">
+                <h2 class="text-2xl font-bold mb-4">Agregar Nueva Joya</h2>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <form id="add-joya-form">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Nombre *</label>
+                                <input type="text" id="nombre" required class="form-input">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Peso (g)</label>
+                                <input type="number" id="peso" step="0.01" class="form-input">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Color</label>
+                                <input type="text" id="color" class="form-input">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">URL de la Foto</label>
+                                <input type="url" id="foto" class="form-input">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Joyero</label>
+                                <select id="joyero" class="form-input">
+                                    <!-- Se generará dinámicamente -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Precio *</label>
+                                <input type="number" id="precio" required step="0.01" class="form-input">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Estado</label>
+                                <select id="estado" class="form-input">
+                                    <option value="Catálogo">Catálogo</option>
+                                    <option value="Venta">Venta</option>
+                                    <option value="Alquiler">Alquiler</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Tipo</label>
+                                <select id="tipo" class="form-input">
+                                    <option value="arete">Arete</option>
+                                    <option value="anillo">Anillo</option>
+                                    <option value="pulsera">Pulsera</option>
+                                    <option value="dije">Dije</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex gap-2">
+                            <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
+                                Agregar Joya
+                            </button>
+                            <button type="button" onclick="showView('catalog')" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista Historial -->
+        <div id="view-history" class="view hidden">
+            <h2 class="text-2xl font-bold mb-4">Historial de Joyas</h2>
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Nombre</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Tipo</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Joyero</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Precio</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Estado</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Comprador</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table" class="divide-y divide-gray-200">
+                            <!-- Se carga dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="empty-history" class="text-center text-gray-500 py-8 hidden">
+                    No hay joyas registradas
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista Ingresos -->
+        <div id="view-income" class="view hidden">
+            <h2 class="text-2xl font-bold mb-4">Dashboard de Ingresos</h2>
+            
+            <!-- Resumen financiero -->
+            <div id="income-summary" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <!-- Se carga dinámicamente -->
+            </div>
+
+            <!-- Lista de joyas vendidas -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <h3 class="text-lg font-bold p-4 bg-gray-50">Joyas Vendidas</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Joya</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Comprador</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Precio</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Joyero</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Taller</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Formación</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Distribución</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-table" class="divide-y divide-gray-200">
+                            <!-- Se carga dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="empty-sales" class="text-center text-gray-500 py-8 hidden">
+                    No hay joyas vendidas
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista Egresos -->
+        <div id="view-expenses" class="view hidden">
+            <h2 class="text-2xl font-bold mb-4">Egresos</h2>
+            
+            <div class="mb-6">
+                <button onclick="showEgresoModal()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                    Agregar Egreso
+                </button>
+            </div>
+
+            <!-- Resumen de egresos -->
+            <div id="expenses-summary" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <!-- Se carga dinámicamente -->
+            </div>
+
+            <!-- Egresos por joyero -->
+            <div id="expenses-by-jeweler" class="bg-white rounded-lg shadow-md p-4 mb-6 hidden">
+                <h3 class="text-lg font-bold mb-4">Egresos por Joyero</h3>
+                <div id="jeweler-expenses-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                    <!-- Se carga dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Lista de todos los egresos -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <h3 class="text-lg font-bold p-4 bg-gray-50">Historial de Egresos</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Concepto</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Categoría</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Joyero</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Monto</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenses-table" class="divide-y divide-gray-200">
+                            <!-- Se carga dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="empty-expenses" class="text-center text-gray-500 py-8 hidden">
+                    No hay egresos registrados
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista Balance -->
+        <div id="view-balance" class="view hidden">
+            <h2 class="text-2xl font-bold mb-4">Balance General</h2>
+            
+            <!-- Resumen General -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-xl font-bold mb-4">Resumen Financiero</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-green-600" id="total-ingresos">$0</div>
+                        <div class="text-sm text-gray-600">Total Ingresos</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-red-600" id="total-egresos">$0</div>
+                        <div class="text-sm text-gray-600">Total Egresos</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold" id="balance-neto">$0</div>
+                        <div class="text-sm text-gray-600">Balance Neto</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance por Categorías -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h4 class="font-bold text-lg mb-3 text-green-800">Joyeros</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Ingresos:</span>
+                            <span class="font-bold text-green-600" id="joyero-ingresos">$0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Egresos:</span>
+                            <span class="font-bold text-red-600" id="joyero-egresos">$0</span>
+                        </div>
+                        <div class="border-t pt-2 flex justify-between">
+                            <span class="font-medium">Balance:</span>
+                            <span class="font-bold" id="joyero-balance">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h4 class="font-bold text-lg mb-3 text-blue-800">Taller</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Ingresos:</span>
+                            <span class="font-bold text-green-600" id="taller-ingresos">$0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Egresos:</span>
+                            <span class="font-bold text-red-600" id="taller-egresos">$0</span>
+                        </div>
+                        <div class="border-t pt-2 flex justify-between">
+                            <span class="font-medium">Balance:</span>
+                            <span class="font-bold" id="taller-balance">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h4 class="font-bold text-lg mb-3 text-purple-800">Formación</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Ingresos:</span>
+                            <span class="font-bold text-green-600" id="formacion-ingresos">$0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Egresos:</span>
+                            <span class="font-bold text-red-600" id="formacion-egresos">$0</span>
+                        </div>
+                        <div class="border-t pt-2 flex justify-between">
+                            <span class="font-medium">Balance:</span>
+                            <span class="font-bold" id="formacion-balance">$0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance por Joyero Individual -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-bold mb-4">Balance por Joyero</h3>
+                <div id="balance-joyeros" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Se carga dinámicamente -->
+                </div>
+                <div id="no-joyero-balance" class="text-center text-gray-500 py-4 hidden">
+                    No hay transacciones por joyeros individuales
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Contraseña -->
+    <div id="password-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full mx-4">
+            <h3 class="text-lg font-bold mb-4">Ingresa la contraseña</h3>
+            <input type="password" id="password-input" class="border rounded px-3 py-2 w-full mb-4" placeholder="Contraseña">
+            <div class="flex gap-2">
+                <button onclick="checkPassword()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                    Acceder
+                </button>
+                <button onclick="closePasswordModal()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalle de Joya -->
+    <div id="detail-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <div class="flex justify-between items-start mb-4">
+                <h3 id="detail-title" class="text-xl font-bold"></h3>
+                <button onclick="closeDetailModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="detail-image" class="h-48 bg-gray-200 rounded mb-4 flex items-center justify-center">
+                <span class="text-gray-500">Sin imagen</span>
+            </div>
+            <div id="detail-info" class="space-y-2">
+                <!-- Se carga dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Venta -->
+    <div id="sale-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h3 id="sale-title" class="text-xl font-bold mb-4"></h3>
+            <p id="sale-price" class="mb-4"></p>
+            <input type="text" id="buyer-name" class="border rounded px-3 py-2 w-full mb-4" placeholder="Nombre del comprador">
+            <div class="flex gap-2">
+                <button onclick="confirmSale()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    Confirmar Venta
+                </button>
+                <button onclick="closeSaleModal()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Egreso -->
+    <div id="expense-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold mb-4">Agregar Egreso</h3>
+            <form id="expense-form">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Concepto</label>
+                        <input type="text" id="expense-name" required class="form-input" placeholder="Descripción del gasto">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Monto</label>
+                        <input type="number" id="expense-amount" required step="0.01" class="form-input" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Categoría</label>
+                        <select id="expense-category" class="form-input" onchange="toggleJewelerName()">
+                            <option value="joyero">Joyero</option>
+                            <option value="taller">Taller</option>
+                            <option value="formacion">Formación</option>
+                        </select>
+                    </div>
+                    <div id="jeweler-name-field">
+                        <label class="block text-sm font-medium mb-1">Nombre del Joyero</label>
+                        <input type="text" id="jeweler-name" class="form-input" placeholder="Nombre completo">
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-6">
+                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                        Agregar Egreso
+                    </button>
+                    <button type="button" onclick="closeExpenseModal()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .btn-nav {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .form-input {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+        
+        .view {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+
+    <script>
+        // Datos globales
+        let joyas = [];
+        let egresos = [];
+        let currentView = 'catalog';
+        let pendingView = '';
+        let currentJoya = null;
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            generateJoyeroOptions();
+            loadCatalog();
+            
+            // Event listeners
+            document.getElementById('add-joya-form').addEventListener('submit', addJoya);
+            document.getElementById('expense-form').addEventListener('submit', addExpense);
+            document.getElementById('password-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') checkPassword();
+            });
+        }
+
+        function generateJoyeroOptions() {
+            const select = document.getElementById('joyero');
+            for (let i = 1; i <= 20; i++) {
+                const option = document.createElement('option');
+                option.value = `joyero${i}`;
+                option.textContent = `joyero${i}`;
+                select.appendChild(option);
+            }
+        }
+
+        // Gestión de vistas
+        function showView(view) {
+            // Ocultar todas las vistas
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            
+            // Mostrar la vista seleccionada
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            
+            // Actualizar botones de navegación
+            document.querySelectorAll('.btn-nav').forEach(btn => {
+                btn.classList.remove('bg-purple-600');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            
+            if (view === 'catalog') {
+                document.getElementById('btn-catalog').classList.remove('bg-gray-200', 'text-gray-700');
+                document.getElementById('btn-catalog').classList.add('bg-purple-600', 'text-white');
+            }
+            
+            currentView = view;
+            
+            // Cargar datos según la vista
+            switch(view) {
+                case 'catalog':
+                    loadCatalog();
+                    break;
+                case 'history':
+                    loadHistory();
+                    break;
+                case 'income':
+                    loadIncome();
+                    break;
+                case 'expenses':
+                    loadExpenses();
+                    break;
+                case 'balance':
+                    loadBalance();
+                    break;
+            }
+        }
+
+        // Autenticación
+        function requestAccess(view) {
+            pendingView = view;
+            document.getElementById('password-modal').classList.remove('hidden');
+            document.getElementById('password-input').focus();
+        }
+
+        function checkPassword() {
+            const password = document.getElementById('password-input').value;
+            if (password === 'mompox') {
+                closePasswordModal();
+                showView(pendingView);
+            } else {
+                alert('Contraseña incorrecta');
+            }
+        }
+
+        function closePasswordModal() {
+            document.getElementById('password-modal').classList.add('hidden');
+            document.getElementById('password-input').value = '';
+        }
+
+        // Gestión de joyas
+        function addJoya(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const joya = {
+                id: Date.now(),
+                nombre: document.getElementById('nombre').value,
+                peso: parseFloat(document.getElementById('peso').value) || 0,
+                color: document.getElementById('color').value,
+                foto: document.getElementById('foto').value,
+                joyero: document.getElementById('joyero').value,
+                precio: parseFloat(document.getElementById('precio').value),
+                estado: document.getElementById('estado').value,
+                tipo: document.getElementById('tipo').value,
+                comprador: '',
+                distribucion: { joyero: 35, taller: 35, formacion: 30 },
+                fechaCreacion: new Date().toISOString()
+            };
+            
+            joyas.push(joya);
+            e.target.reset();
+            showView('catalog');
+        }
+
+        function loadCatalog() {
+            const grid = document.getElementById('catalog-grid');
+            const empty = document.getElementById('empty-catalog');
+            const catalogJoyas = joyas.filter(joya => joya.estado === 'Catálogo');
+            
+            if (catalogJoyas.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            
+            empty.classList.add('hidden');
+            
+            grid.innerHTML = catalogJoyas.map(joya => `
+                <div class="bg-white rounded-lg shadow-md p-4 border">
+                    <div class="h-48 bg-gray-200 rounded mb-4 flex items-center justify-center">
+                        ${joya.foto ? 
+                            `<img src="${joya.foto}" alt="${joya.nombre}" class="max-h-full max-w-full object-cover rounded">` :
+                            '<span class="text-gray-500">Sin imagen</span>'
+                        }
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">${joya.nombre}</h3>
+                    <p class="text-gray-600 mb-1">Peso: ${joya.peso}g</p>
+                    <p class="text-2xl font-bold text-green-600 mb-4">${joya.precio.toLocaleString()}</p>
+                    <div class="flex gap-2">
+                        <button onclick="showJoyaDetail(${joya.id})" class="flex-1 bg-purple-600 text-white py-2 rounded hover:bg-purple-700 flex items-center justify-center gap-2">
+                            <i class="fas fa-eye"></i> Ver
+                        </button>
+                        <button onclick="showSaleModal(${joya.id})" class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">
+                            Vender
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showJoyaDetail(id) {
+            const joya = joyas.find(j => j.id === id);
+            if (!joya) return;
+            
+            document.getElementById('detail-title').textContent = joya.nombre;
+            
+            const imageDiv = document.getElementById('detail-image');
+            imageDiv.innerHTML = joya.foto ? 
+                `<img src="${joya.foto}" alt="${joya.nombre}" class="max-h-full max-w-full object-cover rounded">` :
+                '<span class="text-gray-500">Sin imagen</span>';
+            
+            document.getElementById('detail-info').innerHTML = `
+                <p><strong>Tipo:</strong> ${joya.tipo}</p>
+                <p><strong>Color:</strong> ${joya.color}</p>
+                <p><strong>Peso:</strong> ${joya.peso}g</p>
+                <p><strong>Joyero:</strong> ${joya.joyero}</p>
+                <p><strong>Precio:</strong> ${joya.precio.toLocaleString()}</p>
+            `;
+            
+            document.getElementById('detail-modal').classList.remove('hidden');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+        }
+
+        function showSaleModal(id) {
+            currentJoya = joyas.find(j => j.id === id);
+            if (!currentJoya) return;
+            
+            document.getElementById('sale-title').textContent = `Vender: ${currentJoya.nombre}`;
+            document.getElementById('sale-price').textContent = `Precio: ${currentJoya.precio.toLocaleString()}`;
+            document.getElementById('buyer-name').value = '';
+            document.getElementById('sale-modal').classList.remove('hidden');
+        }
+
+        function confirmSale() {
+            const buyerName = document.getElementById('buyer-name').value.trim();
+            if (!buyerName) {
+                alert('Por favor ingresa el nombre del comprador');
+                return;
+            }
+            
+            currentJoya.estado = 'Venta';
+            currentJoya.comprador = buyerName;
+            currentJoya.fechaVenta = new Date().toISOString();
+            
+            closeSaleModal();
+            loadCatalog();
+        }
+
+        function closeSaleModal() {
+            document.getElementById('sale-modal').classList.add('hidden');
+            currentJoya = null;
+        }
+
+        // Historial
+        function loadHistory() {
+            const table = document.getElementById('history-table');
+            const empty = document.getElementById('empty-history');
+            
+            if (joyas.length === 0) {
+                table.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            
+            empty.classList.add('hidden');
+            
+            table.innerHTML = joyas.map(joya => `
+                <tr>
+                    <td class="px-4 py-3">${joya.nombre}</td>
+                    <td class="px-4 py-3">${joya.tipo}</td>
+                    <td class="px-4 py-3">${joya.joyero}</td>
+                    <td class="px-4 py-3">${joya.precio.toLocaleString()}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs ${
+                            joya.estado === 'Venta' ? 'bg-green-100 text-green-800' :
+                            joya.estado === 'Catálogo' ? 'bg-blue-100 text-blue-800' :
+                            'bg-yellow-100 text-yellow-800'
+                        }">
+                            ${joya.estado}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">${joya.comprador || '-'}</td>
+                    <td class="px-4 py-3">
+                        <button onclick="editJoya(${joya.id})" class="text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function editJoya(id) {
+            // Funcionalidad de edición simplificada
+            alert('Funcionalidad de edición en desarrollo');
+        }
+
+        // Ingresos
+        function loadIncome() {
+            const joyasVendidas = joyas.filter(joya => joya.estado === 'Venta');
+            const ingresos = calcularIngresos();
+            const egresosCalc = calcularEgresos();
+            const balances = {
+                joyero: ingresos.joyero - egresosCalc.joyero,
+                taller: ingresos.taller - egresosCalc.taller,
+                formacion: ingresos.formacion - egresosCalc.formacion
+            };
+
+            // Resumen financiero
+            document.getElementById('income-summary').innerHTML = `
+                <div class="bg-green-100 p-4 rounded-lg">
+                    <h3 class="font-bold text-green-800">Joyero</h3>
+                    <p class="text-2xl font-bold text-green-600">${ingresos.joyero.toLocaleString()}</p>
+                    <p class="text-sm text-green-700">Ingresos</p>
+                    <p class="text-sm text-red-600">-${egresosCalc.joyero.toLocaleString()}</p>
+                    <p class="text-lg font-bold ${balances.joyero >= 0 ? 'text-green-600' : 'text-red-600'}">
+                        Balance: ${balances.joyero.toLocaleString()}
+                    </p>
+                </div>
+                <div class="bg-blue-100 p-4 rounded-lg">
+                    <h3 class="font-bold text-blue-800">Taller</h3>
+                    <p class="text-2xl font-bold text-blue-600">${ingresos.taller.toLocaleString()}</p>
+                    <p class="text-sm text-blue-700">Ingresos</p>
+                    <p class="text-sm text-red-600">-${egresosCalc.taller.toLocaleString()}</p>
+                    <p class="text-lg font-bold ${balances.taller >= 0 ? 'text-green-600' : 'text-red-600'}">
+                        Balance: ${balances.taller.toLocaleString()}
+                    </p>
+                </div>
+                <div class="bg-purple-100 p-4 rounded-lg">
+                    <h3 class="font-bold text-purple-800">Formación</h3>
+                    <p class="text-2xl font-bold text-purple-600">${ingresos.formacion.toLocaleString()}</p>
+                    <p class="text-sm text-purple-700">Ingresos</p>
+                    <p class="text-sm text-red-600">-${egresosCalc.formacion.toLocaleString()}</p>
+                    <p class="text-lg font-bold ${balances.formacion >= 0 ? 'text-green-600' : 'text-red-600'}">
+                        Balance: ${balances.formacion.toLocaleString()}
+                    </p>
+                </div>
+            `;
+
+            // Tabla de joyas vendidas
+            const salesTable = document.getElementById('sales-table');
+            const emptySales = document.getElementById('empty-sales');
+            
+            if (joyasVendidas.length === 0) {
+                salesTable.innerHTML = '';
+                emptySales.classList.remove('hidden');
+                return;
+            }
+            
+            emptySales.classList.add('hidden');
+            
+            salesTable.innerHTML = joyasVendidas.map(joya => {
+                const dist = joya.distribucion;
+                return `
+                    <tr>
+                        <td class="px-4 py-3">${joya.nombre}</td>
+                        <td class="px-4 py-3">${joya.comprador}</td>
+                        <td class="px-4 py-3">${joya.precio.toLocaleString()}</td>
+                        <td class="px-4 py-3">${((joya.precio * dist.joyero) / 100).toLocaleString()}</td>
+                        <td class="px-4 py-3">${((joya.precio * dist.taller) / 100).toLocaleString()}</td>
+                        <td class="px-4 py-3">${((joya.precio * dist.formacion) / 100).toLocaleString()}</td>
+                        <td class="px-4 py-3">
+                            <span class="text-xs">${dist.joyero}%/${dist.taller}%/${dist.formacion}%</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Egresos
+        function loadExpenses() {
+            const egresosCalc = calcularEgresos();
+            const egresosPorJoyero = {};
+            
+            egresos.forEach(egreso => {
+                if (egreso.categoria === 'joyero' && egreso.joyeroNombre) {
+                    if (!egresosPorJoyero[egreso.joyeroNombre]) {
+                        egresosPorJoyero[egreso.joyeroNombre] = 0;
+                    }
+                    egresosPorJoyero[egreso.joyeroNombre] += egreso.precio;
+                }
+            });
+
+            // Resumen de egresos
+            document.getElementById('expenses-summary').innerHTML = `
+                <div class="bg-red-100 p-4 rounded-lg">
+                    <h3 class="font-bold text-red-800">Joyero</h3>
+                    <p class="text-2xl font-bold text-red-600">${egresosCalc.joyero.toLocaleString()}</p>
+                </div>
+                <div class="bg-red-100 p-4 rounded-lg">
+                    <h3 class="font-bold text-red-800">Taller</h3>
+                    <p class="text-2xl font-bold text-red-600">${egresosCalc.taller.toLocaleString()}</p>
+                </div>
+                <div class="bg-red-100 p-4 rounded-lg">
+                    <h3 class="font-bold text-red-800">Formación</h3>
+                    <p class="text-2xl font-bold text-red-600">${egresosCalc.formacion.toLocaleString()}</p>
+                </div>
+            `;
+
+            // Egresos por joyero
+            const expensesByJeweler = document.getElementById('expenses-by-jeweler');
+            if (Object.keys(egresosPorJoyero).length > 0) {
+                expensesByJeweler.classList.remove('hidden');
+                document.getElementById('jeweler-expenses-grid').innerHTML = Object.entries(egresosPorJoyero).map(([joyero, total]) => `
+                    <div class="bg-gray-50 p-3 rounded">
+                        <p class="font-medium">${joyero}</p>
+                        <p class="text-lg font-bold text-red-600">${total.toLocaleString()}</p>
+                    </div>
+                `).join('');
+            } else {
+                expensesByJeweler.classList.add('hidden');
+            }
+
+            // Tabla de egresos
+            const expensesTable = document.getElementById('expenses-table');
+            const emptyExpenses = document.getElementById('empty-expenses');
+            
+            if (egresos.length === 0) {
+                expensesTable.innerHTML = '';
+                emptyExpenses.classList.remove('hidden');
+                return;
+            }
+            
+            emptyExpenses.classList.add('hidden');
+            
+            expensesTable.innerHTML = egresos.map(egreso => `
+                <tr>
+                    <td class="px-4 py-3">${egreso.nombre}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs ${
+                            egreso.categoria === 'joyero' ? 'bg-green-100 text-green-800' :
+                            egreso.categoria === 'taller' ? 'bg-blue-100 text-blue-800' :
+                            'bg-purple-100 text-purple-800'
+                        }">
+                            ${egreso.categoria}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">${egreso.joyeroNombre || '-'}</td>
+                    <td class="px-4 py-3 font-bold text-red-600">${egreso.precio.toLocaleString()}</td>
+                    <td class="px-4 py-3">${new Date(egreso.fecha).toLocaleDateString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        function showEgresoModal() {
+            document.getElementById('expense-modal').classList.remove('hidden');
+            toggleJewelerName();
+        }
+
+        function closeExpenseModal() {
+            document.getElementById('expense-modal').classList.add('hidden');
+            document.getElementById('expense-form').reset();
+        }
+
+        function toggleJewelerName() {
+            const category = document.getElementById('expense-category').value;
+            const field = document.getElementById('jeweler-name-field');
+            
+            if (category === 'joyero') {
+                field.style.display = 'block';
+                document.getElementById('jeweler-name').required = true;
+            } else {
+                field.style.display = 'none';
+                document.getElementById('jeweler-name').required = false;
+            }
+        }
+
+        function addExpense(e) {
+            e.preventDefault();
+            
+            const egreso = {
+                id: Date.now(),
+                nombre: document.getElementById('expense-name').value,
+                precio: parseFloat(document.getElementById('expense-amount').value),
+                categoria: document.getElementById('expense-category').value,
+                joyeroNombre: document.getElementById('jeweler-name').value,
+                fecha: new Date().toISOString()
+            };
+            
+            egresos.push(egreso);
+            closeExpenseModal();
+            loadExpenses();
+        }
+
+        // Balance
+        function loadBalance() {
+            const ingresos = calcularIngresos();
+            const egresosCalc = calcularEgresos();
+            const totalIngresos = ingresos.joyero + ingresos.taller + ingresos.formacion;
+            const totalEgresos = egresosCalc.joyero + egresosCalc.taller + egresosCalc.formacion;
+            const balanceNeto = totalIngresos - totalEgresos;
+
+            // Resumen general
+            document.getElementById('total-ingresos').textContent = `${totalIngresos.toLocaleString()}`;
+            document.getElementById('total-egresos').textContent = `${totalEgresos.toLocaleString()}`;
+            document.getElementById('balance-neto').textContent = `${balanceNeto.toLocaleString()}`;
+            document.getElementById('balance-neto').className = `text-3xl font-bold ${balanceNeto >= 0 ? 'text-green-600' : 'text-red-600'}`;
+
+            // Balance por categorías
+            const balances = {
+                joyero: ingresos.joyero - egresosCalc.joyero,
+                taller: ingresos.taller - egresosCalc.taller,
+                formacion: ingresos.formacion - egresosCalc.formacion
+            };
+
+            document.getElementById('joyero-ingresos').textContent = `${ingresos.joyero.toLocaleString()}`;
+            document.getElementById('joyero-egresos').textContent = `${egresosCalc.joyero.toLocaleString()}`;
+            document.getElementById('joyero-balance').textContent = `${balances.joyero.toLocaleString()}`;
+            document.getElementById('joyero-balance').className = `font-bold ${balances.joyero >= 0 ? 'text-green-600' : 'text-red-600'}`;
+
+            document.getElementById('taller-ingresos').textContent = `${ingresos.taller.toLocaleString()}`;
+            document.getElementById('taller-egresos').textContent = `${egresosCalc.taller.toLocaleString()}`;
+            document.getElementById('taller-balance').textContent = `${balances.taller.toLocaleString()}`;
+            document.getElementById('taller-balance').className = `font-bold ${balances.taller >= 0 ? 'text-green-600' : 'text-red-600'}`;
+
+            document.getElementById('formacion-ingresos').textContent = `${ingresos.formacion.toLocaleString()}`;
+            document.getElementById('formacion-egresos').textContent = `${egresosCalc.formacion.toLocaleString()}`;
+            document.getElementById('formacion-balance').textContent = `${balances.formacion.toLocaleString()}`;
+            document.getElementById('formacion-balance').className = `font-bold ${balances.formacion >= 0 ? 'text-green-600' : 'text-red-600'}`;
+
+            // Balance por joyero individual
+            loadJoyeroBalance();
+        }
+
+        function loadJoyeroBalance() {
+            const balanceJoyeros = {};
+            const balanceContainer = document.getElementById('balance-joyeros');
+            const noBalance = document.getElementById('no-joyero-balance');
+
+            // Calcular ingresos por joyero (de las ventas)
+            joyas.filter(joya => joya.estado === 'Venta').forEach(joya => {
+                if (!balanceJoyeros[joya.joyero]) {
+                    balanceJoyeros[joya.joyero] = { ingresos: 0, egresos: 0 };
+                }
+                balanceJoyeros[joya.joyero].ingresos += (joya.precio * joya.distribucion.joyero) / 100;
+            });
+
+            // Calcular egresos por joyero específico
+            egresos.forEach(egreso => {
+                if (egreso.categoria === 'joyero' && egreso.joyeroNombre) {
+                    if (!balanceJoyeros[egreso.joyeroNombre]) {
+                        balanceJoyeros[egreso.joyeroNombre] = { ingresos: 0, egresos: 0 };
+                    }
+                    balanceJoyeros[egreso.joyeroNombre].egresos += egreso.precio;
+                }
+            });
+
+            if (Object.keys(balanceJoyeros).length === 0) {
+                balanceContainer.innerHTML = '';
+                noBalance.classList.remove('hidden');
+                return;
+            }
+
+            noBalance.classList.add('hidden');
+            balanceContainer.innerHTML = Object.entries(balanceJoyeros).map(([joyero, data]) => {
+                const balance = data.ingresos - data.egresos;
+                return `
+                    <div class="bg-gray-50 p-4 rounded-lg border">
+                        <h4 class="font-bold text-lg mb-2">${joyero}</h4>
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Ingresos:</span>
+                                <span class="text-green-600 font-medium">${data.ingresos.toLocaleString()}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Egresos:</span>
+                                <span class="text-red-600 font-medium">${data.egresos.toLocaleString()}</span>
+                            </div>
+                            <div class="border-t pt-2 flex justify-between">
+                                <span class="font-medium">Balance:</span>
+                                <span class="font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                    ${balance.toLocaleString()}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Cálculos financieros
+        function calcularIngresos() {
+            const joyasVendidas = joyas.filter(joya => joya.estado === 'Venta');
+            let totales = { joyero: 0, taller: 0, formacion: 0 };
+            
+            joyasVendidas.forEach(joya => {
+                const dist = joya.distribucion;
+                totales.joyero += (joya.precio * dist.joyero) / 100;
+                totales.taller += (joya.precio * dist.taller) / 100;
+                totales.formacion += (joya.precio * dist.formacion) / 100;
+            });
+            
+            return totales;
+        }
+
+        function calcularEgresos() {
+            let totales = { joyero: 0, taller: 0, formacion: 0 };
+            
+            egresos.forEach(egreso => {
+                totales[egreso.categoria] += egreso.precio;
+            });
+            
+            return totales;
+        }
+    </script>
+</body>
+</html>
