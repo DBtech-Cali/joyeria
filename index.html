@@ -1,6 +1,45 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
+        const supabase = supabase.createClient('https://cuglaresqulcbrnmbdjl.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z2xhcmVzcXVsY2Jybm1iZGpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1MzcxNjYsImV4cCI6MjA3MTExMzE2Nn0.-NsJ35YETHOVjjKvxZqkfnxIexCtClhKatNCvhyvmNU');
+        </script>
+
+<script>
+  // Inicializa el cliente de Supabase
+  const supabase = supabase.createClient(
+    'https://cuglaresqulcbrnmbdjl.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z2xhcmVzcXVsY2Jybm1iZGpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1MzcxNjYsImV4cCI6MjA3MTExMzE2Nn0.-NsJ35YETHOVjjKvxZqkfnxIexCtClhKatNCvhyvmNU'
+  );
+
+  // Aquí va tu función subirFoto
+  async function subirFoto(file) {
+    const nombreArchivo = `joyas/${Date.now()}_${file.name}`;
+    const { data, error } = await supabase.storage.from('joyas').upload(nombreArchivo, file);
+    if (error) {
+      alert('Error al subir la foto');
+      return null;
+    }
+    return supabase.storage.from('joyas').getPublicUrl(nombreArchivo).data.publicUrl;
+  }
+
+  // Aquí va tu función addJoya, y demás lógica
+  async function addJoya(e) {
+    e.preventDefault();
+    const file = document.getElementById('foto-file').files[0];
+    let fotoUrl = '';
+    if (file) {
+      fotoUrl = await subirFoto(file);
+    }
+    // ... resto de tu código ...
+  }
+
+  // Tu código de inicialización, eventos, etc.
+</script>
+
+
+
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Amathea - Sistema de Gestión de Joyería</title>
@@ -96,7 +135,16 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">URL de la Foto</label>
-                                <input type="url" id="foto" class="form-input">
+                                async function subirFoto(file) {
+                                      const nombreArchivo = `joyas/${Date.now()}_${file.name}`;
+                                      const { data, error } = await supabase.storage.from('joyas').upload(nombreArchivo, file);
+                                      if (error) {
+                                        alert('Error al subir la foto');
+                                        return null;
+                                  }
+  // Obtén la URL pública
+  return supabase.storage.from('joyas').getPublicUrl(nombreArchivo).data.publicUrl;
+}
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Joyero</label>
@@ -566,29 +614,39 @@
         }
 
         // Gestión de joyas
-        function addJoya(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const joya = {
-                id: Date.now(),
-                nombre: document.getElementById('nombre').value,
-                peso: parseFloat(document.getElementById('peso').value) || 0,
-                color: document.getElementById('color').value,
-                foto: document.getElementById('foto').value,
-                joyero: document.getElementById('joyero').value,
-                precio: parseFloat(document.getElementById('precio').value),
-                estado: document.getElementById('estado').value,
-                tipo: document.getElementById('tipo').value,
-                comprador: '',
-                distribucion: { joyero: 35, taller: 35, formacion: 30 },
-                fechaCreacion: new Date().toISOString()
-            };
-            
-            joyas.push(joya);
-            e.target.reset();
-            showView('catalog');
-        }
+async function addJoya(e) {
+  e.preventDefault();
+
+  // Obtener archivo de imagen
+  const file = document.getElementById('foto-file').files[0];
+  let fotoUrl = '';
+  if (file) {
+    fotoUrl = await subirFoto(file); // subirFoto debe estar definida y usar tu bucket "joyas"
+  }
+
+  // Crear objeto joya con los datos del formulario
+  const joya = {
+    nombre: document.getElementById('nombre').value,
+    peso: parseFloat(document.getElementById('peso').value) || 0,
+    color: document.getElementById('color').value,
+    foto: fotoUrl,
+    joyero: document.getElementById('joyero').value,
+    precio: parseFloat(document.getElementById('precio').value),
+    estado: document.getElementById('estado').value,
+    tipo: document.getElementById('tipo').value,
+    comprador: '',
+    distribucion: { joyero: 35, taller: 35, formacion: 30 },
+    fechaCreacion: new Date().toISOString()
+  };
+
+  // Insertar en Supabase
+  const { data, error } = await supabase.from('joyas').insert([joya]);
+  if (error) alert('Error al guardar la joya');
+  else showView('catalog');
+
+  // Opcional: limpia el formulario
+  e.target.reset();
+}
 
         function loadCatalog() {
             const grid = document.getElementById('catalog-grid');
