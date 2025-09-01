@@ -4,16 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Amathea - Sistema de Gestión de Joyería</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const SUPABASE_URL = "https://cuglaresqulcbrnmbdjl.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z2xhcmVzcXVsY2Jybm1iZGpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1MzcxNjYsImV4cCI6MjA3MTExMzE2Nn0.-NsJ35YETHOVjjKvxZqkfnxIexCtClhKatNCvhyvmNU";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-</script>
-
-
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -477,6 +467,215 @@
         }
     </style>
 
+
+
+
+
+
+<!-- Importar cliente de Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://cuglaresqulcbrnmbdjl.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z2xhcmVzcXVsY2Jybm1iZGpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1MzcxNjYsImV4cCI6MjA3MTExMzE2Nn0.-NsJ35YETHOVjjKvxZqkfnxIexCtClhKatNCvhyvmNU";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  /* =========================
+     FUNCIONES PRINCIPALES
+     ========================= */
+
+  // Mostrar vistas
+  function showView(viewId) {
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    document.getElementById(viewId).classList.remove('hidden');
+  }
+
+  // AGREGAR JOYA
+  async function addJoya(e) {
+    e.preventDefault();
+
+    const fileInput = document.getElementById('foto');
+    let fotoUrl = "";
+
+    if (fileInput.files && fileInput.files[0]) {
+      const file = fileInput.files[0];
+      const fileName = `${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage.from('joyas').upload(fileName, file);
+      if (uploadError) {
+        alert("Error subiendo la imagen: " + uploadError.message);
+        return;
+      }
+      const { data: publicUrl } = supabase.storage.from('joyas').getPublicUrl(fileName);
+      fotoUrl = publicUrl.publicUrl;
+    } else {
+      fotoUrl = document.getElementById('foto').value; // URL manual
+    }
+
+    const joya = {
+      nombre: document.getElementById('nombre').value,
+      peso: parseFloat(document.getElementById('peso').value) || 0,
+      color: document.getElementById('color').value,
+      foto: fotoUrl,
+      joyero: document.getElementById('joyero').value,
+      precio: parseFloat(document.getElementById('precio').value),
+      estado: document.getElementById('estado').value,
+      tipo: document.getElementById('tipo').value,
+      comprador: '',
+      fecha_creacion: new Date().toISOString()
+    };
+
+    const { error } = await supabase.from('joyas').insert([joya]);
+    if (error) {
+      alert("Error guardando joya en Supabase: " + error.message);
+      return;
+    }
+
+    e.target.reset();
+    showView('catalog');
+    loadCatalog();
+  }
+
+  // CARGAR CATALOGO
+  async function loadCatalog() {
+    const { data: catalogJoyas, error } = await supabase
+      .from('joyas')
+      .select('*')
+      .eq('estado', 'Catálogo');
+
+    const grid = document.getElementById('catalog-grid');
+    const empty = document.getElementById('empty-catalog');
+
+    if (error || !catalogJoyas || catalogJoyas.length === 0) {
+      grid.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    empty.classList.add('hidden');
+    grid.innerHTML = catalogJoyas.map(joya => `
+      <div class="bg-white rounded-lg shadow-md p-4 border">
+        <div class="h-48 bg-gray-200 rounded mb-4 flex items-center justify-center">
+          ${joya.foto ? `<img src="${joya.foto}" alt="${joya.nombre}" class="max-h-full max-w-full object-cover rounded">`
+            : '<span class="text-gray-500">Sin imagen</span>'}
+        </div>
+        <h3 class="font-bold text-lg mb-2">${joya.nombre}</h3>
+        <p class="text-gray-600 mb-1">Peso: ${joya.peso}g</p>
+        <p class="text-2xl font-bold text-green-600 mb-4">${joya.precio.toLocaleString()}</p>
+        <div class="flex gap-2">
+          <button onclick="showJoyaDetail(${joya.id})" class="flex-1 bg-purple-600 text-white py-2 rounded hover:bg-purple-700">
+            Ver
+          </button>
+          <button onclick="showSaleModal(${joya.id})" class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">
+            Vender
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // DETALLE DE JOYA
+  async function showJoyaDetail(id) {
+    const { data, error } = await supabase.from('joyas').select('*').eq('id', id).single();
+    if (error || !data) {
+      alert("Error cargando detalles de joya");
+      return;
+    }
+    alert(`Joya: ${data.nombre}\nPrecio: ${data.precio}\nEstado: ${data.estado}`);
+  }
+
+  // REGISTRAR VENTA
+  async function confirmSale(id, comprador) {
+    const { error } = await supabase.from('joyas')
+      .update({ estado: 'Vendido', comprador: comprador, fecha_venta: new Date().toISOString() })
+      .eq('id', id);
+    if (error) {
+      alert("Error registrando venta: " + error.message);
+      return;
+    }
+    loadCatalog();
+  }
+
+  // AGREGAR EGRESO
+  async function addEgreso(e) {
+    e.preventDefault();
+    const egreso = {
+      nombre: document.getElementById('expense-name').value,
+      precio: parseFloat(document.getElementById('expense-amount').value),
+      categoria: document.getElementById('expense-category').value,
+      joyero_nombre: document.getElementById('jeweler-name').value || null,
+      fecha: new Date().toISOString()
+    };
+    const { error } = await supabase.from('egresos').insert([egreso]);
+    if (error) {
+      alert("Error guardando egreso en Supabase: " + error.message);
+      return;
+    }
+    e.target.reset();
+    loadEgresos();
+  }
+
+  // CARGAR EGRESOS
+  async function loadEgresos() {
+    const { data: rows, error } = await supabase.from('egresos').select('*').order('fecha', { ascending: false });
+    const container = document.getElementById('egresos-list');
+    if (error || !rows || rows.length === 0) {
+      container.innerHTML = '<p class="text-gray-500">No hay egresos registrados.</p>';
+      return;
+    }
+    container.innerHTML = rows.map(r => `
+      <div class="border rounded p-2 mb-2">
+        <p><b>${r.nombre}</b> - ${r.categoria}</p>
+        <p>$${r.precio.toLocaleString()} - ${new Date(r.fecha).toLocaleDateString()}</p>
+      </div>
+    `).join('');
+  }
+
+  // CARGAR INGRESOS (JOYAS VENDIDAS)
+  async function loadIngresos() {
+    const { data: ventas, error } = await supabase
+      .from('joyas')
+      .select('*')
+      .eq('estado', 'Vendido');
+    const container = document.getElementById('ingresos-list');
+    if (error || !ventas || ventas.length === 0) {
+      container.innerHTML = '<p class="text-gray-500">No hay ingresos registrados.</p>';
+      return;
+    }
+    container.innerHTML = ventas.map(v => `
+      <div class="border rounded p-2 mb-2">
+        <p><b>${v.nombre}</b> - Comprador: ${v.comprador || 'N/A'}</p>
+        <p>$${v.precio.toLocaleString()} - ${new Date(v.fecha_venta).toLocaleDateString()}</p>
+      </div>
+    `).join('');
+  }
+
+  // BALANCE (Ingresos - Egresos)
+  async function loadBalance() {
+    const { data: ventas } = await supabase.from('joyas').select('precio').eq('estado', 'Vendido');
+    const { data: gastos } = await supabase.from('egresos').select('precio');
+
+    const totalIngresos = ventas ? ventas.reduce((a, v) => a + v.precio, 0) : 0;
+    const totalEgresos = gastos ? gastos.reduce((a, g) => a + g.precio, 0) : 0;
+    const balance = totalIngresos - totalEgresos;
+
+    const container = document.getElementById('balance-info');
+    container.innerHTML = `
+      <p>Total Ingresos: $${totalIngresos.toLocaleString()}</p>
+      <p>Total Egresos: $${totalEgresos.toLocaleString()}</p>
+      <p><b>Balance: $${balance.toLocaleString()}</b></p>
+    `;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
     <script>
         // Datos globales
         let joyas = [];
@@ -576,97 +775,24 @@
         }
 
         // Gestión de joyas
-        async function addJoya(e) {
-  e.preventDefault();
-
-  const fileInput = document.getElementById('foto');
-  let fotoUrl = "";
-
-  // Si subieron un archivo en vez de un link
-  if (fileInput.files && fileInput.files[0]) {
-    const file = fileInput.files[0];
-    const fileName = `${Date.now()}_${file.name}`;
-    const { data, error } = await supabase.storage
-      .from('joyas')
-      .upload(fileName, file);
-
-    if (error) {
-      alert("Error subiendo la imagen: " + error.message);
-      return;
-    }
-
-    const { data: publicUrl } = supabase.storage
-      .from('joyas')
-      .getPublicUrl(fileName);
-
-    fotoUrl = publicUrl.publicUrl;
-  } else {
-    fotoUrl = document.getElementById('foto').value; // URL manual
-  }
-
-  const joya = {
-    nombre: document.getElementById('nombre').value,
-    peso: parseFloat(document.getElementById('peso').value) || 0,
-    color: document.getElementById('color').value,
-    foto: fotoUrl,
-    joyero: document.getElementById('joyero').value,
-    precio: parseFloat(document.getElementById('precio').value),
-    estado: document.getElementById('estado').value,
-    tipo: document.getElementById('tipo').value,
-    comprador: '',
-    fecha_creacion: new Date().toISOString()
-  };
-
-  const { data, error } = await supabase.from('joyas').insert([joya]);
-
-  if (error) {
-    alert("Error guardando en Supabase: " + error.message);
-    return;
-  }
-
-  e.target.reset();
-  showView('catalog');
-  async function loadCatalog() {
-  const { data: catalogJoyas, error } = await supabase
-    .from('joyas')
-    .select('*')
-    .eq('estado', 'Catálogo');
-
-  const grid = document.getElementById('catalog-grid');
-  const empty = document.getElementById('empty-catalog');
-
-  if (error || catalogJoyas.length === 0) {
-    grid.innerHTML = '';
-    empty.classList.remove('hidden');
-    return;
-  }
-
-  empty.classList.add('hidden');
-
-  grid.innerHTML = catalogJoyas.map(joya => `
-    <div class="bg-white rounded-lg shadow-md p-4 border">
-      <div class="h-48 bg-gray-200 rounded mb-4 flex items-center justify-center">
-        ${joya.foto ? 
-            `<img src="${joya.foto}" alt="${joya.nombre}" class="max-h-full max-w-full object-cover rounded">` :
-            '<span class="text-gray-500">Sin imagen</span>'
-        }
-      </div>
-      <h3 class="font-bold text-lg mb-2">${joya.nombre}</h3>
-      <p class="text-gray-600 mb-1">Peso: ${joya.peso}g</p>
-      <p class="text-2xl font-bold text-green-600 mb-4">${joya.precio.toLocaleString()}</p>
-      <div class="flex gap-2">
-        <button onclick="showJoyaDetail(${joya.id})" class="flex-1 bg-purple-600 text-white py-2 rounded hover:bg-purple-700 flex items-center justify-center gap-2">
-          <i class="fas fa-eye"></i> Ver
-        </button>
-        <button onclick="showSaleModal(${joya.id})" class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">
-          Vender
-        </button>
-      </div>
-    </div>
-  `).join('');
-};
-}
-;
+        function addJoya(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const joya = {
+                id: Date.now(),
+                nombre: document.getElementById('nombre').value,
+                peso: parseFloat(document.getElementById('peso').value) || 0,
+                color: document.getElementById('color').value,
+                foto: document.getElementById('foto').value,
+                joyero: document.getElementById('joyero').value,
+                precio: parseFloat(document.getElementById('precio').value),
+                estado: document.getElementById('estado').value,
+                tipo: document.getElementById('tipo').value,
+                comprador: '',
+                distribucion: { joyero: 35, taller: 35, formacion: 30 },
+                fechaCreacion: new Date().toISOString()
+            };
             
             joyas.push(joya);
             e.target.reset();
