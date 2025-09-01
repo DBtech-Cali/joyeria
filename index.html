@@ -1,48 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
-        const supabase = supabase.createClient('https://cuglaresqulcbrnmbdjl.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z2xhcmVzcXVsY2Jybm1iZGpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1MzcxNjYsImV4cCI6MjA3MTExMzE2Nn0.-NsJ35YETHOVjjKvxZqkfnxIexCtClhKatNCvhyvmNU');
-        </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amathea - Sistema de Gestión de Joyería</title>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // Inicializa el cliente de Supabase
-  const supabase = supabase.createClient(
-    'https://cuglaresqulcbrnmbdjl.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z2xhcmVzcXVsY2Jybm1iZGpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1MzcxNjYsImV4cCI6MjA3MTExMzE2Nn0.-NsJ35YETHOVjjKvxZqkfnxIexCtClhKatNCvhyvmNU'
-  );
-
-  // Aquí va tu función subirFoto
-  async function subirFoto(file) {
-    const nombreArchivo = `joyas/${Date.now()}_${file.name}`;
-    const { data, error } = await supabase.storage.from('joyas').upload(nombreArchivo, file);
-    if (error) {
-      alert('Error al subir la foto');
-      return null;
-    }
-    return supabase.storage.from('joyas').getPublicUrl(nombreArchivo).data.publicUrl;
-  }
-
-  // Aquí va tu función addJoya, y demás lógica
-  async function addJoya(e) {
-    e.preventDefault();
-    const file = document.getElementById('foto-file').files[0];
-    let fotoUrl = '';
-    if (file) {
-      fotoUrl = await subirFoto(file);
-    }
-    // ... resto de tu código ...
-  }
-
-  // Tu código de inicialización, eventos, etc.
+  const SUPABASE_URL = "https://cuglaresqulcbrnmbdjl.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z2xhcmVzcXVsY2Jybm1iZGpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1MzcxNjYsImV4cCI6MjA3MTExMzE2Nn0.-NsJ35YETHOVjjKvxZqkfnxIexCtClhKatNCvhyvmNU";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 </script>
 
 
 
-    
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amathea - Sistema de Gestión de Joyería</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -135,16 +106,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">URL de la Foto</label>
-                                async function subirFoto(file) {
-                                      const nombreArchivo = `joyas/${Date.now()}_${file.name}`;
-                                      const { data, error } = await supabase.storage.from('joyas').upload(nombreArchivo, file);
-                                      if (error) {
-                                        alert('Error al subir la foto');
-                                        return null;
-                                  }
-  // Obtén la URL pública
-  return supabase.storage.from('joyas').getPublicUrl(nombreArchivo).data.publicUrl;
-}
+                                <input type="url" id="foto" class="form-input">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Joyero</label>
@@ -614,17 +576,34 @@
         }
 
         // Gestión de joyas
-async function addJoya(e) {
+        async function addJoya(e) {
   e.preventDefault();
 
-  // Obtener archivo de imagen
-  const file = document.getElementById('foto-file').files[0];
-  let fotoUrl = '';
-  if (file) {
-    fotoUrl = await subirFoto(file); // subirFoto debe estar definida y usar tu bucket "joyas"
+  const fileInput = document.getElementById('foto');
+  let fotoUrl = "";
+
+  // Si subieron un archivo en vez de un link
+  if (fileInput.files && fileInput.files[0]) {
+    const file = fileInput.files[0];
+    const fileName = `${Date.now()}_${file.name}`;
+    const { data, error } = await supabase.storage
+      .from('joyas')
+      .upload(fileName, file);
+
+    if (error) {
+      alert("Error subiendo la imagen: " + error.message);
+      return;
+    }
+
+    const { data: publicUrl } = supabase.storage
+      .from('joyas')
+      .getPublicUrl(fileName);
+
+    fotoUrl = publicUrl.publicUrl;
+  } else {
+    fotoUrl = document.getElementById('foto').value; // URL manual
   }
 
-  // Crear objeto joya con los datos del formulario
   const joya = {
     nombre: document.getElementById('nombre').value,
     peso: parseFloat(document.getElementById('peso').value) || 0,
@@ -635,18 +614,64 @@ async function addJoya(e) {
     estado: document.getElementById('estado').value,
     tipo: document.getElementById('tipo').value,
     comprador: '',
-    distribucion: { joyero: 35, taller: 35, formacion: 30 },
-    fechaCreacion: new Date().toISOString()
+    fecha_creacion: new Date().toISOString()
   };
 
-  // Insertar en Supabase
   const { data, error } = await supabase.from('joyas').insert([joya]);
-  if (error) alert('Error al guardar la joya');
-  else showView('catalog');
 
-  // Opcional: limpia el formulario
+  if (error) {
+    alert("Error guardando en Supabase: " + error.message);
+    return;
+  }
+
   e.target.reset();
+  showView('catalog');
+  async function loadCatalog() {
+  const { data: catalogJoyas, error } = await supabase
+    .from('joyas')
+    .select('*')
+    .eq('estado', 'Catálogo');
+
+  const grid = document.getElementById('catalog-grid');
+  const empty = document.getElementById('empty-catalog');
+
+  if (error || catalogJoyas.length === 0) {
+    grid.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+
+  grid.innerHTML = catalogJoyas.map(joya => `
+    <div class="bg-white rounded-lg shadow-md p-4 border">
+      <div class="h-48 bg-gray-200 rounded mb-4 flex items-center justify-center">
+        ${joya.foto ? 
+            `<img src="${joya.foto}" alt="${joya.nombre}" class="max-h-full max-w-full object-cover rounded">` :
+            '<span class="text-gray-500">Sin imagen</span>'
+        }
+      </div>
+      <h3 class="font-bold text-lg mb-2">${joya.nombre}</h3>
+      <p class="text-gray-600 mb-1">Peso: ${joya.peso}g</p>
+      <p class="text-2xl font-bold text-green-600 mb-4">${joya.precio.toLocaleString()}</p>
+      <div class="flex gap-2">
+        <button onclick="showJoyaDetail(${joya.id})" class="flex-1 bg-purple-600 text-white py-2 rounded hover:bg-purple-700 flex items-center justify-center gap-2">
+          <i class="fas fa-eye"></i> Ver
+        </button>
+        <button onclick="showSaleModal(${joya.id})" class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">
+          Vender
+        </button>
+      </div>
+    </div>
+  `).join('');
+};
 }
+;
+            
+            joyas.push(joya);
+            e.target.reset();
+            showView('catalog');
+        }
 
         function loadCatalog() {
             const grid = document.getElementById('catalog-grid');
