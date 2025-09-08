@@ -813,17 +813,32 @@
                 return;
             }
 
-            const { error } = await supabase
+            const distribString = `${joyeroDist}%/${tallerDist}%/${formacionDist}%`;
+            let { error } = await supabase
                 .from('joyas')
                 .update({ 
                     estado: 'Vendido', 
                     comprador: buyerName, 
                     fecha_venta: new Date().toISOString(),
-                    joyero_distribucion: `${joyeroDist}%/${tallerDist}%/${formacionDist}%`
+                    joyero_distribucion: distribString
                 })
                 .eq('id', currentJoya.id);
-            
-            if (error) {
+            if (error && error.message && error.message.includes('joyero_distribucion')) {
+                const retry = await supabase
+                    .from('joyas')
+                    .update({ 
+                        estado: 'Vendido', 
+                        comprador: buyerName, 
+                        fecha_venta: new Date().toISOString()
+                    })
+                    .eq('id', currentJoya.id);
+                if (retry.error) {
+                    alert("Error registrando venta: " + retry.error.message);
+                    return;
+                } else {
+                    alert('Venta registrada. Nota: para guardar la distribución, agrega columna joyero_distribucion (texto) en tabla joyas.');
+                }
+            } else if (error) {
                 alert("Error registrando venta: " + error.message);
                 return;
             }
