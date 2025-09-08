@@ -605,15 +605,21 @@
                         .upload(fileName, file);
                     
                     if (uploadError) {
-                        alert("Error subiendo la imagen: " + uploadError.message);
-                        return;
+                        if (uploadError.message.includes('row-level security policy')) {
+                            alert("Error de permisos: Necesitas configurar las políticas de seguridad en Supabase Storage. Por ahora, puedes agregar la joya sin imagen o usar una URL externa.");
+                            // Continuar sin imagen si hay error de permisos
+                            fotoUrl = "";
+                        } else {
+                            alert("Error subiendo la imagen: " + uploadError.message);
+                            return;
+                        }
+                    } else {
+                        const { data: publicUrl } = supabase.storage
+                            .from('joyas')
+                            .getPublicUrl(fileName);
+                        
+                        fotoUrl = publicUrl.publicUrl;
                     }
-                    
-                    const { data: publicUrl } = supabase.storage
-                        .from('joyas')
-                        .getPublicUrl(fileName);
-                    
-                    fotoUrl = publicUrl.publicUrl;
                 } catch (error) {
                     alert("Error procesando la imagen: " + error.message);
                     return;
@@ -823,7 +829,7 @@
                 .eq('estado', 'Vendido');
             
             const { data: egresos, error: egresosError } = await supabase
-                .from('egresos')
+                .from('egreso')
                 .select('*');
 
             if (ventasError) {
@@ -909,7 +915,7 @@
         // Egresos
         async function loadExpenses() {
             const { data: egresos, error } = await supabase
-                .from('egresos')
+                .from('egreso')
                 .select('*')
                 .order('fecha', { ascending: false });
 
@@ -922,11 +928,11 @@
             const egresosPorJoyero = {};
             
             (egresos || []).forEach(egreso => {
-                if (egreso.categoria === 'joyero' && egreso.joyero_nombre) {
-                    if (!egresosPorJoyero[egreso.joyero_nombre]) {
-                        egresosPorJoyero[egreso.joyero_nombre] = 0;
+                if (egreso.categoria === 'joyero' && egreso.nombre_joyero) {
+                    if (!egresosPorJoyero[egreso.nombre_joyero]) {
+                        egresosPorJoyero[egreso.nombre_joyero] = 0;
                     }
-                    egresosPorJoyero[egreso.joyero_nombre] += egreso.precio;
+                    egresosPorJoyero[egreso.nombre_joyero] += egreso.monto;
                 }
             });
 
@@ -974,7 +980,7 @@
             
             expensesTable.innerHTML = egresos.map(egreso => `
                 <tr>
-                    <td class="px-4 py-3">${egreso.nombre}</td>
+                    <td class="px-4 py-3">${egreso.concepto}</td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-1 rounded text-xs ${
                             egreso.categoria === 'joyero' ? 'bg-green-100 text-green-800' :
@@ -984,8 +990,8 @@
                             ${egreso.categoria}
                         </span>
                     </td>
-                    <td class="px-4 py-3">${egreso.joyero_nombre || '-'}</td>
-                    <td class="px-4 py-3 font-bold text-red-600">${egreso.precio.toLocaleString()}</td>
+                    <td class="px-4 py-3">${egreso.nombre_joyero || '-'}</td>
+                    <td class="px-4 py-3 font-bold text-red-600">${egreso.monto.toLocaleString()}</td>
                     <td class="px-4 py-3">${new Date(egreso.fecha).toLocaleDateString()}</td>
                 </tr>
             `).join('');
@@ -1018,14 +1024,14 @@
             e.preventDefault();
             
             const egreso = {
-                nombre: document.getElementById('expense-name').value,
-                precio: parseFloat(document.getElementById('expense-amount').value),
+                concepto: document.getElementById('expense-name').value,
+                monto: parseFloat(document.getElementById('expense-amount').value),
                 categoria: document.getElementById('expense-category').value,
-                joyero_nombre: document.getElementById('jeweler-name').value,
+                nombre_joyero: document.getElementById('jeweler-name').value || null,
                 fecha: new Date().toISOString()
             };
             
-            const { error } = await supabase.from('egresos').insert([egreso]);
+            const { error } = await supabase.from('egreso').insert([egreso]);
             if (error) {
                 alert("Error guardando egreso en Supabase: " + error.message);
                 return;
@@ -1043,7 +1049,7 @@
                 .eq('estado', 'Vendido');
             
             const { data: egresos, error: egresosError } = await supabase
-                .from('egresos')
+                .from('egreso')
                 .select('*');
 
             if (ventasError) {
@@ -1111,11 +1117,11 @@
 
             // Calcular egresos por joyero específico
             egresos.forEach(egreso => {
-                if (egreso.categoria === 'joyero' && egreso.joyero_nombre) {
-                    if (!balanceJoyeros[egreso.joyero_nombre]) {
-                        balanceJoyeros[egreso.joyero_nombre] = { ingresos: 0, egresos: 0 };
+                if (egreso.categoria === 'joyero' && egreso.nombre_joyero) {
+                    if (!balanceJoyeros[egreso.nombre_joyero]) {
+                        balanceJoyeros[egreso.nombre_joyero] = { ingresos: 0, egresos: 0 };
                     }
-                    balanceJoyeros[egreso.joyero_nombre].egresos += egreso.precio;
+                    balanceJoyeros[egreso.nombre_joyero].egresos += egreso.monto;
                 }
             });
 
@@ -1171,7 +1177,7 @@
             let totales = { joyero: 0, taller: 0, formacion: 0 };
             
             egresos.forEach(egreso => {
-                totales[egreso.categoria] += egreso.precio;
+                totales[egreso.categoria] += egreso.monto;
             });
             
             return totales;
