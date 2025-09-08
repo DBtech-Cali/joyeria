@@ -601,7 +601,6 @@
                 estado: document.getElementById('estado').value,
                 tipo: document.getElementById('tipo').value,
                 comprador: '',
-                distribucion: { joyero: 35, taller: 35, formacion: 30 },
                 fecha_creacion: new Date().toISOString()
             };
             
@@ -855,7 +854,8 @@
             emptySales.classList.add('hidden');
             
             salesTable.innerHTML = joyasVendidas.map(joya => {
-                const dist = joya.distribucion || { joyero: 35, taller: 35, formacion: 30 };
+                // Usar distribución por defecto si no existe en la base de datos
+                const dist = { joyero: 35, taller: 35, formacion: 30 };
                 return `
                     <tr>
                         <td class="px-4 py-3">${joya.nombre}</td>
@@ -1065,7 +1065,8 @@
                 if (!balanceJoyeros[joya.joyero]) {
                     balanceJoyeros[joya.joyero] = { ingresos: 0, egresos: 0 };
                 }
-                const dist = joya.distribucion || { joyero: 35, taller: 35, formacion: 30 };
+                // Usar distribución por defecto: 35% joyero, 35% taller, 30% formación
+                const dist = { joyero: 35, taller: 35, formacion: 30 };
                 balanceJoyeros[joya.joyero].ingresos += (joya.precio * dist.joyero) / 100;
             });
 
@@ -1117,7 +1118,8 @@
             let totales = { joyero: 0, taller: 0, formacion: 0 };
             
             joyasVendidas.forEach(joya => {
-                const dist = joya.distribucion || { joyero: 35, taller: 35, formacion: 30 };
+                // Usar distribución por defecto: 35% joyero, 35% taller, 30% formación
+                const dist = { joyero: 35, taller: 35, formacion: 30 };
                 totales.joyero += (joya.precio * dist.joyero) / 100;
                 totales.taller += (joya.precio * dist.taller) / 100;
                 totales.formacion += (joya.precio * dist.formacion) / 100;
