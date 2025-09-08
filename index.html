@@ -385,6 +385,21 @@
             <h3 id="sale-title" class="text-xl font-bold mb-4"></h3>
             <p id="sale-price" class="mb-4"></p>
             <input type="text" id="buyer-name" class="border rounded px-3 py-2 w-full mb-4" placeholder="Nombre del comprador">
+            <div class="grid grid-cols-3 gap-2 mb-2">
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">Joyero (%)</label>
+                    <input type="number" id="dist-joyero" min="0" max="100" step="1" class="border rounded px-2 py-1 w-full" value="35" oninput="updateDistributionSum()">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">Taller (%)</label>
+                    <input type="number" id="dist-taller" min="0" max="100" step="1" class="border rounded px-2 py-1 w-full" value="35" oninput="updateDistributionSum()">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">Formación (%)</label>
+                    <input type="number" id="dist-formacion" min="0" max="100" step="1" class="border rounded px-2 py-1 w-full" value="30" oninput="updateDistributionSum()">
+                </div>
+            </div>
+            <p id="dist-total" class="text-xs mb-3 text-gray-600">Suma: 100%</p>
             <div class="flex gap-2">
                 <button onclick="confirmSale()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
                     Confirmar Venta
@@ -392,6 +407,32 @@
                 <button onclick="closeSaleModal()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
                     Cancelar
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edición de Distribución -->
+    <div id="dist-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold mb-4">Editar Distribución</h3>
+            <div class="grid grid-cols-3 gap-2 mb-2">
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">Joyero (%)</label>
+                    <input type="number" id="edit-dist-joyero" min="0" max="100" step="1" class="border rounded px-2 py-1 w-full" value="35" oninput="updateEditDistributionSum()">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">Taller (%)</label>
+                    <input type="number" id="edit-dist-taller" min="0" max="100" step="1" class="border rounded px-2 py-1 w-full" value="35" oninput="updateEditDistributionSum()">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">Formación (%)</label>
+                    <input type="number" id="edit-dist-formacion" min="0" max="100" step="1" class="border rounded px-2 py-1 w-full" value="30" oninput="updateEditDistributionSum()">
+                </div>
+            </div>
+            <p id="edit-dist-total" class="text-xs mb-3 text-gray-600">Suma: 100%</p>
+            <div class="flex gap-2">
+                <button onclick="saveDistribution()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Guardar</button>
+                <button onclick="closeDistModal()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancelar</button>
             </div>
         </div>
     </div>
@@ -749,6 +790,10 @@
             document.getElementById('sale-title').textContent = `Vender: ${currentJoya.nombre}`;
             document.getElementById('sale-price').textContent = `Precio: ${currentJoya.precio.toLocaleString()}`;
             document.getElementById('buyer-name').value = '';
+            document.getElementById('dist-joyero').value = '35';
+            document.getElementById('dist-taller').value = '35';
+            document.getElementById('dist-formacion').value = '30';
+            document.getElementById('dist-total').textContent = 'Suma: 100%';
             document.getElementById('sale-modal').classList.remove('hidden');
         }
 
@@ -759,12 +804,22 @@
                 return;
             }
             
+            const joyeroDist = parseFloat(document.getElementById('dist-joyero').value) || 0;
+            const tallerDist = parseFloat(document.getElementById('dist-taller').value) || 0;
+            const formacionDist = parseFloat(document.getElementById('dist-formacion').value) || 0;
+
+            if (joyeroDist + tallerDist + formacionDist !== 100) {
+                alert('La suma de las distribuciones debe ser 100%. Por favor, ajusta los porcentajes.');
+                return;
+            }
+
             const { error } = await supabase
                 .from('joyas')
                 .update({ 
                     estado: 'Vendido', 
                     comprador: buyerName, 
-                    fecha_venta: new Date().toISOString() 
+                    fecha_venta: new Date().toISOString(),
+                    joyero_distribucion: `${joyeroDist}%/${tallerDist}%/${formacionDist}%`
                 })
                 .eq('id', currentJoya.id);
             
@@ -825,9 +880,68 @@
             `).join('');
         }
 
+        let currentEditJoyaId = null;
         function editJoya(id) {
-            // Funcionalidad de edición simplificada
-            alert('Funcionalidad de edición en desarrollo');
+            currentEditJoyaId = id;
+            // Cargar joya y abrir modal de edición de distribución
+            openDistModal(id);
+        }
+
+        async function openDistModal(id) {
+            const { data: joya, error } = await supabase
+                .from('joyas')
+                .select('*')
+                .eq('id', id)
+                .single();
+            if (error || !joya) {
+                alert('No se pudo cargar la joya');
+                return;
+            }
+            const d = joya.joyero_distribucion ? joya.joyero_distribucion.replaceAll('%','').split('/') : ['35','35','30'];
+            document.getElementById('edit-dist-joyero').value = parseInt(d[0] || '35', 10);
+            document.getElementById('edit-dist-taller').value = parseInt(d[1] || '35', 10);
+            document.getElementById('edit-dist-formacion').value = parseInt(d[2] || '30', 10);
+            updateEditDistributionSum();
+            document.getElementById('dist-modal').classList.remove('hidden');
+        }
+
+        function closeDistModal() {
+            document.getElementById('dist-modal').classList.add('hidden');
+            currentEditJoyaId = null;
+        }
+
+        function updateEditDistributionSum() {
+            const j = parseInt(document.getElementById('edit-dist-joyero').value || '0', 10);
+            const t = parseInt(document.getElementById('edit-dist-taller').value || '0', 10);
+            const f = parseInt(document.getElementById('edit-dist-formacion').value || '0', 10);
+            const total = j + t + f;
+            const label = document.getElementById('edit-dist-total');
+            label.textContent = `Suma: ${total}%`;
+            label.className = `text-xs mb-3 ${total === 100 ? 'text-green-600' : 'text-red-600'}`;
+        }
+
+        async function saveDistribution() {
+            if (!currentEditJoyaId) { return; }
+            const j = parseInt(document.getElementById('edit-dist-joyero').value || '0', 10);
+            const t = parseInt(document.getElementById('edit-dist-taller').value || '0', 10);
+            const f = parseInt(document.getElementById('edit-dist-formacion').value || '0', 10);
+            if (j + t + f !== 100) {
+                alert('La distribución debe sumar 100%.');
+                return;
+            }
+            const distribString = `${j}%/${t}%/${f}%`;
+            const { error } = await supabase
+                .from('joyas')
+                .update({ joyero_distribucion: distribString })
+                .eq('id', currentEditJoyaId);
+            if (error) {
+                alert('Error guardando distribución: ' + error.message);
+                return;
+            }
+            closeDistModal();
+            await loadHistory();
+            if (currentView === 'income') { await loadIncome(); }
+            if (currentView === 'balance') { await loadBalance(); }
         }
 
         // Ingresos
@@ -903,18 +1017,17 @@
             emptySales.classList.add('hidden');
             
             salesTable.innerHTML = joyasVendidas.map(joya => {
-                // Usar distribución por defecto si no existe en la base de datos
-                const dist = { joyero: 35, taller: 35, formacion: 30 };
+                const distrib = joya.joyero_distribucion ? joya.joyero_distribucion.split('/') : ['35', '35', '30'];
                 return `
                     <tr>
                         <td class="px-4 py-3">${joya.nombre}</td>
                         <td class="px-4 py-3">${joya.comprador}</td>
                         <td class="px-4 py-3">${joya.precio.toLocaleString()}</td>
-                        <td class="px-4 py-3">${((joya.precio * dist.joyero) / 100).toLocaleString()}</td>
-                        <td class="px-4 py-3">${((joya.precio * dist.taller) / 100).toLocaleString()}</td>
-                        <td class="px-4 py-3">${((joya.precio * dist.formacion) / 100).toLocaleString()}</td>
+                        <td class="px-4 py-3">${((joya.precio * parseFloat(distrib[0])) / 100).toLocaleString()}</td>
+                        <td class="px-4 py-3">${((joya.precio * parseFloat(distrib[1])) / 100).toLocaleString()}</td>
+                        <td class="px-4 py-3">${((joya.precio * parseFloat(distrib[2])) / 100).toLocaleString()}</td>
                         <td class="px-4 py-3">
-                            <span class="text-xs">${dist.joyero}%/${dist.taller}%/${dist.formacion}%</span>
+                            <span class="text-xs">${distrib[0]}%/${distrib[1]}%/${distrib[2]}%</span>
                         </td>
                     </tr>
                 `;
@@ -1039,8 +1152,13 @@
             
             const { error } = await supabase.from('egreso').insert([egreso]);
             if (error) {
-                alert("Error guardando egreso en Supabase: " + error.message);
-                return;
+                if (error.message.includes('row-level security policy')) {
+                    alert("Error de permisos: Necesitas configurar las políticas de seguridad en Supabase para la tabla 'egreso'. Ve a Table Editor → egreso → Policies y crea una política que permita INSERT.");
+                    return;
+                } else {
+                    alert("Error guardando egreso en Supabase: " + error.message);
+                    return;
+                }
             }
             
             closeExpenseModal();
@@ -1169,11 +1287,10 @@
             let totales = { joyero: 0, taller: 0, formacion: 0 };
             
             joyasVendidas.forEach(joya => {
-                // Usar distribución por defecto: 35% joyero, 35% taller, 30% formación
-                const dist = { joyero: 35, taller: 35, formacion: 30 };
-                totales.joyero += (joya.precio * dist.joyero) / 100;
-                totales.taller += (joya.precio * dist.taller) / 100;
-                totales.formacion += (joya.precio * dist.formacion) / 100;
+                const distrib = joya.joyero_distribucion ? joya.joyero_distribucion.split('/') : ['35', '35', '30'];
+                totales.joyero += (joya.precio * parseFloat(distrib[0])) / 100;
+                totales.taller += (joya.precio * parseFloat(distrib[1])) / 100;
+                totales.formacion += (joya.precio * parseFloat(distrib[2])) / 100;
             });
             
             return totales;
@@ -1187,6 +1304,15 @@
             });
             
             return totales;
+        }
+
+        function updateDistributionSum() {
+            const joyeroDist = parseFloat(document.getElementById('dist-joyero').value) || 0;
+            const tallerDist = parseFloat(document.getElementById('dist-taller').value) || 0;
+            const formacionDist = parseFloat(document.getElementById('dist-formacion').value) || 0;
+            const total = joyeroDist + tallerDist + formacionDist;
+            document.getElementById('dist-total').textContent = `Suma: ${total}%`;
+            document.getElementById('dist-total').style.color = total === 100 ? 'green' : 'red';
         }
     </script>
 </body>
