@@ -95,8 +95,8 @@
                                 <input type="text" id="color" class="form-input">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1">URL de la Foto</label>
-                                <input type="url" id="foto" class="form-input">
+                                <label class="block text-sm font-medium mb-1">Foto de la Joya</label>
+                                <input type="file" id="foto" accept="image/*" class="form-input">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Joyero</label>
@@ -591,11 +591,40 @@
         async function addJoya(e) {
             e.preventDefault();
             
+            const fileInput = document.getElementById('foto');
+            let fotoUrl = "";
+
+            // Manejar subida de imagen si se seleccionó un archivo
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const fileName = `${Date.now()}_${file.name}`;
+                
+                try {
+                    const { error: uploadError } = await supabase.storage
+                        .from('joyas')
+                        .upload(fileName, file);
+                    
+                    if (uploadError) {
+                        alert("Error subiendo la imagen: " + uploadError.message);
+                        return;
+                    }
+                    
+                    const { data: publicUrl } = supabase.storage
+                        .from('joyas')
+                        .getPublicUrl(fileName);
+                    
+                    fotoUrl = publicUrl.publicUrl;
+                } catch (error) {
+                    alert("Error procesando la imagen: " + error.message);
+                    return;
+                }
+            }
+            
             const joya = {
                 nombre: document.getElementById('nombre').value,
                 peso: parseFloat(document.getElementById('peso').value) || 0,
                 color: document.getElementById('color').value,
-                foto: document.getElementById('foto').value,
+                foto: fotoUrl,
                 joyero: document.getElementById('joyero').value,
                 precio: parseFloat(document.getElementById('precio').value),
                 estado: document.getElementById('estado').value,
@@ -797,9 +826,14 @@
                 .from('egresos')
                 .select('*');
 
-            if (ventasError || egresosError) {
-                alert("Error cargando datos financieros");
+            if (ventasError) {
+                alert("Error cargando ventas: " + ventasError.message);
                 return;
+            }
+            
+            if (egresosError) {
+                console.warn("Error cargando egresos (tabla puede no existir):", egresosError.message);
+                // Continuar sin egresos si la tabla no existe
             }
 
             const ingresos = calcularIngresos(joyasVendidas || []);
@@ -880,8 +914,8 @@
                 .order('fecha', { ascending: false });
 
             if (error) {
-                alert("Error cargando egresos");
-                return;
+                console.warn("Error cargando egresos (tabla puede no existir):", error.message);
+                // Continuar sin egresos si la tabla no existe
             }
 
             const egresosCalc = calcularEgresos(egresos || []);
@@ -1012,9 +1046,14 @@
                 .from('egresos')
                 .select('*');
 
-            if (ventasError || egresosError) {
-                alert("Error cargando datos para balance");
+            if (ventasError) {
+                alert("Error cargando ventas para balance: " + ventasError.message);
                 return;
+            }
+            
+            if (egresosError) {
+                console.warn("Error cargando egresos para balance (tabla puede no existir):", egresosError.message);
+                // Continuar sin egresos si la tabla no existe
             }
 
             const ingresos = calcularIngresos(ventas || []);
