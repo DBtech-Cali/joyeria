@@ -479,191 +479,6 @@
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z2xhcmVzcXVsY2Jybm1iZGpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1MzcxNjYsImV4cCI6MjA3MTExMzE2Nn0.-NsJ35YETHOVjjKvxZqkfnxIexCtClhKatNCvhyvmNU";
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  /* =========================
-     FUNCIONES PRINCIPALES
-     ========================= */
-
-  // Mostrar vistas
-  function showView(viewId) {
-    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-    document.getElementById(viewId).classList.remove('hidden');
-  }
-
-  // AGREGAR JOYA
-  async function addJoya(e) {
-    e.preventDefault();
-
-    const fileInput = document.getElementById('foto');
-    let fotoUrl = "";
-
-    if (fileInput.files && fileInput.files[0]) {
-      const file = fileInput.files[0];
-      const fileName = `${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('joyas').upload(fileName, file);
-      if (uploadError) {
-        alert("Error subiendo la imagen: " + uploadError.message);
-        return;
-      }
-      const { data: publicUrl } = supabase.storage.from('joyas').getPublicUrl(fileName);
-      fotoUrl = publicUrl.publicUrl;
-    } else {
-      fotoUrl = document.getElementById('foto').value; // URL manual
-    }
-
-    const joya = {
-      nombre: document.getElementById('nombre').value,
-      peso: parseFloat(document.getElementById('peso').value) || 0,
-      color: document.getElementById('color').value,
-      foto: fotoUrl,
-      joyero: document.getElementById('joyero').value,
-      precio: parseFloat(document.getElementById('precio').value),
-      estado: document.getElementById('estado').value,
-      tipo: document.getElementById('tipo').value,
-      comprador: '',
-      fecha_creacion: new Date().toISOString()
-    };
-
-    const { error } = await supabase.from('joyas').insert([joya]);
-    if (error) {
-      alert("Error guardando joya en Supabase: " + error.message);
-      return;
-    }
-
-    e.target.reset();
-    showView('catalog');
-    loadCatalog();
-  }
-
-  // CARGAR CATALOGO
-  async function loadCatalog() {
-    const { data: catalogJoyas, error } = await supabase
-      .from('joyas')
-      .select('*')
-      .eq('estado', 'Catálogo');
-
-    const grid = document.getElementById('catalog-grid');
-    const empty = document.getElementById('empty-catalog');
-
-    if (error || !catalogJoyas || catalogJoyas.length === 0) {
-      grid.innerHTML = '';
-      empty.classList.remove('hidden');
-      return;
-    }
-
-    empty.classList.add('hidden');
-    grid.innerHTML = catalogJoyas.map(joya => `
-      <div class="bg-white rounded-lg shadow-md p-4 border">
-        <div class="h-48 bg-gray-200 rounded mb-4 flex items-center justify-center">
-          ${joya.foto ? `<img src="${joya.foto}" alt="${joya.nombre}" class="max-h-full max-w-full object-cover rounded">`
-            : '<span class="text-gray-500">Sin imagen</span>'}
-        </div>
-        <h3 class="font-bold text-lg mb-2">${joya.nombre}</h3>
-        <p class="text-gray-600 mb-1">Peso: ${joya.peso}g</p>
-        <p class="text-2xl font-bold text-green-600 mb-4">${joya.precio.toLocaleString()}</p>
-        <div class="flex gap-2">
-          <button onclick="showJoyaDetail(${joya.id})" class="flex-1 bg-purple-600 text-white py-2 rounded hover:bg-purple-700">
-            Ver
-          </button>
-          <button onclick="showSaleModal(${joya.id})" class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">
-            Vender
-          </button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  // DETALLE DE JOYA
-  async function showJoyaDetail(id) {
-    const { data, error } = await supabase.from('joyas').select('*').eq('id', id).single();
-    if (error || !data) {
-      alert("Error cargando detalles de joya");
-      return;
-    }
-    alert(`Joya: ${data.nombre}\nPrecio: ${data.precio}\nEstado: ${data.estado}`);
-  }
-
-  // REGISTRAR VENTA
-  async function confirmSale(id, comprador) {
-    const { error } = await supabase.from('joyas')
-      .update({ estado: 'Vendido', comprador: comprador, fecha_venta: new Date().toISOString() })
-      .eq('id', id);
-    if (error) {
-      alert("Error registrando venta: " + error.message);
-      return;
-    }
-    loadCatalog();
-  }
-
-  // AGREGAR EGRESO
-  async function addEgreso(e) {
-    e.preventDefault();
-    const egreso = {
-      nombre: document.getElementById('expense-name').value,
-      precio: parseFloat(document.getElementById('expense-amount').value),
-      categoria: document.getElementById('expense-category').value,
-      joyero_nombre: document.getElementById('jeweler-name').value || null,
-      fecha: new Date().toISOString()
-    };
-    const { error } = await supabase.from('egresos').insert([egreso]);
-    if (error) {
-      alert("Error guardando egreso en Supabase: " + error.message);
-      return;
-    }
-    e.target.reset();
-    loadEgresos();
-  }
-
-  // CARGAR EGRESOS
-  async function loadEgresos() {
-    const { data: rows, error } = await supabase.from('egresos').select('*').order('fecha', { ascending: false });
-    const container = document.getElementById('egresos-list');
-    if (error || !rows || rows.length === 0) {
-      container.innerHTML = '<p class="text-gray-500">No hay egresos registrados.</p>';
-      return;
-    }
-    container.innerHTML = rows.map(r => `
-      <div class="border rounded p-2 mb-2">
-        <p><b>${r.nombre}</b> - ${r.categoria}</p>
-        <p>$${r.precio.toLocaleString()} - ${new Date(r.fecha).toLocaleDateString()}</p>
-      </div>
-    `).join('');
-  }
-
-  // CARGAR INGRESOS (JOYAS VENDIDAS)
-  async function loadIngresos() {
-    const { data: ventas, error } = await supabase
-      .from('joyas')
-      .select('*')
-      .eq('estado', 'Vendido');
-    const container = document.getElementById('ingresos-list');
-    if (error || !ventas || ventas.length === 0) {
-      container.innerHTML = '<p class="text-gray-500">No hay ingresos registrados.</p>';
-      return;
-    }
-    container.innerHTML = ventas.map(v => `
-      <div class="border rounded p-2 mb-2">
-        <p><b>${v.nombre}</b> - Comprador: ${v.comprador || 'N/A'}</p>
-        <p>$${v.precio.toLocaleString()} - ${new Date(v.fecha_venta).toLocaleDateString()}</p>
-      </div>
-    `).join('');
-  }
-
-  // BALANCE (Ingresos - Egresos)
-  async function loadBalance() {
-    const { data: ventas } = await supabase.from('joyas').select('precio').eq('estado', 'Vendido');
-    const { data: gastos } = await supabase.from('egresos').select('precio');
-
-    const totalIngresos = ventas ? ventas.reduce((a, v) => a + v.precio, 0) : 0;
-    const totalEgresos = gastos ? gastos.reduce((a, g) => a + g.precio, 0) : 0;
-    const balance = totalIngresos - totalEgresos;
-
-    const container = document.getElementById('balance-info');
-    container.innerHTML = `
-      <p>Total Ingresos: $${totalIngresos.toLocaleString()}</p>
-      <p>Total Egresos: $${totalEgresos.toLocaleString()}</p>
-      <p><b>Balance: $${balance.toLocaleString()}</b></p>
-    `;
-  }
 </script>
 
 
@@ -678,8 +493,6 @@
 
     <script>
         // Datos globales
-        let joyas = [];
-        let egresos = [];
         let currentView = 'catalog';
         let pendingView = '';
         let currentJoya = null;
@@ -689,9 +502,9 @@
             initializeApp();
         });
 
-        function initializeApp() {
+        async function initializeApp() {
             generateJoyeroOptions();
-            loadCatalog();
+            await loadCatalog();
             
             // Event listeners
             document.getElementById('add-joya-form').addEventListener('submit', addJoya);
@@ -712,7 +525,7 @@
         }
 
         // Gestión de vistas
-        function showView(view) {
+        async function showView(view) {
             // Ocultar todas las vistas
             document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
             
@@ -735,19 +548,19 @@
             // Cargar datos según la vista
             switch(view) {
                 case 'catalog':
-                    loadCatalog();
+                    await loadCatalog();
                     break;
                 case 'history':
-                    loadHistory();
+                    await loadHistory();
                     break;
                 case 'income':
-                    loadIncome();
+                    await loadIncome();
                     break;
                 case 'expenses':
-                    loadExpenses();
+                    await loadExpenses();
                     break;
                 case 'balance':
-                    loadBalance();
+                    await loadBalance();
                     break;
             }
         }
@@ -759,11 +572,11 @@
             document.getElementById('password-input').focus();
         }
 
-        function checkPassword() {
+        async function checkPassword() {
             const password = document.getElementById('password-input').value;
             if (password === 'mompox') {
                 closePasswordModal();
-                showView(pendingView);
+                await showView(pendingView);
             } else {
                 alert('Contraseña incorrecta');
             }
@@ -775,12 +588,10 @@
         }
 
         // Gestión de joyas
-        function addJoya(e) {
+        async function addJoya(e) {
             e.preventDefault();
             
-            const formData = new FormData(e.target);
             const joya = {
-                id: Date.now(),
                 nombre: document.getElementById('nombre').value,
                 peso: parseFloat(document.getElementById('peso').value) || 0,
                 color: document.getElementById('color').value,
@@ -791,25 +602,35 @@
                 tipo: document.getElementById('tipo').value,
                 comprador: '',
                 distribucion: { joyero: 35, taller: 35, formacion: 30 },
-                fechaCreacion: new Date().toISOString()
+                fecha_creacion: new Date().toISOString()
             };
             
-            joyas.push(joya);
+            const { error } = await supabase.from('joyas').insert([joya]);
+            if (error) {
+                alert("Error guardando joya en Supabase: " + error.message);
+                return;
+            }
+            
             e.target.reset();
             showView('catalog');
+            await loadCatalog();
         }
 
-        function loadCatalog() {
+        async function loadCatalog() {
+            const { data: catalogJoyas, error } = await supabase
+                .from('joyas')
+                .select('*')
+                .eq('estado', 'Catálogo');
+
             const grid = document.getElementById('catalog-grid');
             const empty = document.getElementById('empty-catalog');
-            const catalogJoyas = joyas.filter(joya => joya.estado === 'Catálogo');
-            
-            if (catalogJoyas.length === 0) {
+
+            if (error || !catalogJoyas || catalogJoyas.length === 0) {
                 grid.innerHTML = '';
                 empty.classList.remove('hidden');
                 return;
             }
-            
+
             empty.classList.add('hidden');
             
             grid.innerHTML = catalogJoyas.map(joya => `
@@ -835,9 +656,17 @@
             `).join('');
         }
 
-        function showJoyaDetail(id) {
-            const joya = joyas.find(j => j.id === id);
-            if (!joya) return;
+        async function showJoyaDetail(id) {
+            const { data: joya, error } = await supabase
+                .from('joyas')
+                .select('*')
+                .eq('id', id)
+                .single();
+            
+            if (error || !joya) {
+                alert("Error cargando detalles de joya");
+                return;
+            }
             
             document.getElementById('detail-title').textContent = joya.nombre;
             
@@ -861,29 +690,48 @@
             document.getElementById('detail-modal').classList.add('hidden');
         }
 
-        function showSaleModal(id) {
-            currentJoya = joyas.find(j => j.id === id);
-            if (!currentJoya) return;
+        async function showSaleModal(id) {
+            const { data: joya, error } = await supabase
+                .from('joyas')
+                .select('*')
+                .eq('id', id)
+                .single();
             
+            if (error || !joya) {
+                alert("Error cargando joya");
+                return;
+            }
+            
+            currentJoya = joya;
             document.getElementById('sale-title').textContent = `Vender: ${currentJoya.nombre}`;
             document.getElementById('sale-price').textContent = `Precio: ${currentJoya.precio.toLocaleString()}`;
             document.getElementById('buyer-name').value = '';
             document.getElementById('sale-modal').classList.remove('hidden');
         }
 
-        function confirmSale() {
+        async function confirmSale() {
             const buyerName = document.getElementById('buyer-name').value.trim();
             if (!buyerName) {
                 alert('Por favor ingresa el nombre del comprador');
                 return;
             }
             
-            currentJoya.estado = 'Venta';
-            currentJoya.comprador = buyerName;
-            currentJoya.fechaVenta = new Date().toISOString();
+            const { error } = await supabase
+                .from('joyas')
+                .update({ 
+                    estado: 'Vendido', 
+                    comprador: buyerName, 
+                    fecha_venta: new Date().toISOString() 
+                })
+                .eq('id', currentJoya.id);
+            
+            if (error) {
+                alert("Error registrando venta: " + error.message);
+                return;
+            }
             
             closeSaleModal();
-            loadCatalog();
+            await loadCatalog();
         }
 
         function closeSaleModal() {
@@ -892,11 +740,16 @@
         }
 
         // Historial
-        function loadHistory() {
+        async function loadHistory() {
+            const { data: joyas, error } = await supabase
+                .from('joyas')
+                .select('*')
+                .order('fecha_creacion', { ascending: false });
+            
             const table = document.getElementById('history-table');
             const empty = document.getElementById('empty-history');
             
-            if (joyas.length === 0) {
+            if (error || !joyas || joyas.length === 0) {
                 table.innerHTML = '';
                 empty.classList.remove('hidden');
                 return;
@@ -912,7 +765,7 @@
                     <td class="px-4 py-3">${joya.precio.toLocaleString()}</td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-1 rounded text-xs ${
-                            joya.estado === 'Venta' ? 'bg-green-100 text-green-800' :
+                            joya.estado === 'Vendido' ? 'bg-green-100 text-green-800' :
                             joya.estado === 'Catálogo' ? 'bg-blue-100 text-blue-800' :
                             'bg-yellow-100 text-yellow-800'
                         }">
@@ -935,10 +788,23 @@
         }
 
         // Ingresos
-        function loadIncome() {
-            const joyasVendidas = joyas.filter(joya => joya.estado === 'Venta');
-            const ingresos = calcularIngresos();
-            const egresosCalc = calcularEgresos();
+        async function loadIncome() {
+            const { data: joyasVendidas, error: ventasError } = await supabase
+                .from('joyas')
+                .select('*')
+                .eq('estado', 'Vendido');
+            
+            const { data: egresos, error: egresosError } = await supabase
+                .from('egresos')
+                .select('*');
+
+            if (ventasError || egresosError) {
+                alert("Error cargando datos financieros");
+                return;
+            }
+
+            const ingresos = calcularIngresos(joyasVendidas || []);
+            const egresosCalc = calcularEgresos(egresos || []);
             const balances = {
                 joyero: ingresos.joyero - egresosCalc.joyero,
                 taller: ingresos.taller - egresosCalc.taller,
@@ -980,7 +846,7 @@
             const salesTable = document.getElementById('sales-table');
             const emptySales = document.getElementById('empty-sales');
             
-            if (joyasVendidas.length === 0) {
+            if (!joyasVendidas || joyasVendidas.length === 0) {
                 salesTable.innerHTML = '';
                 emptySales.classList.remove('hidden');
                 return;
@@ -989,7 +855,7 @@
             emptySales.classList.add('hidden');
             
             salesTable.innerHTML = joyasVendidas.map(joya => {
-                const dist = joya.distribucion;
+                const dist = joya.distribucion || { joyero: 35, taller: 35, formacion: 30 };
                 return `
                     <tr>
                         <td class="px-4 py-3">${joya.nombre}</td>
@@ -1007,16 +873,26 @@
         }
 
         // Egresos
-        function loadExpenses() {
-            const egresosCalc = calcularEgresos();
+        async function loadExpenses() {
+            const { data: egresos, error } = await supabase
+                .from('egresos')
+                .select('*')
+                .order('fecha', { ascending: false });
+
+            if (error) {
+                alert("Error cargando egresos");
+                return;
+            }
+
+            const egresosCalc = calcularEgresos(egresos || []);
             const egresosPorJoyero = {};
             
-            egresos.forEach(egreso => {
-                if (egreso.categoria === 'joyero' && egreso.joyeroNombre) {
-                    if (!egresosPorJoyero[egreso.joyeroNombre]) {
-                        egresosPorJoyero[egreso.joyeroNombre] = 0;
+            (egresos || []).forEach(egreso => {
+                if (egreso.categoria === 'joyero' && egreso.joyero_nombre) {
+                    if (!egresosPorJoyero[egreso.joyero_nombre]) {
+                        egresosPorJoyero[egreso.joyero_nombre] = 0;
                     }
-                    egresosPorJoyero[egreso.joyeroNombre] += egreso.precio;
+                    egresosPorJoyero[egreso.joyero_nombre] += egreso.precio;
                 }
             });
 
@@ -1054,7 +930,7 @@
             const expensesTable = document.getElementById('expenses-table');
             const emptyExpenses = document.getElementById('empty-expenses');
             
-            if (egresos.length === 0) {
+            if (!egresos || egresos.length === 0) {
                 expensesTable.innerHTML = '';
                 emptyExpenses.classList.remove('hidden');
                 return;
@@ -1074,7 +950,7 @@
                             ${egreso.categoria}
                         </span>
                     </td>
-                    <td class="px-4 py-3">${egreso.joyeroNombre || '-'}</td>
+                    <td class="px-4 py-3">${egreso.joyero_nombre || '-'}</td>
                     <td class="px-4 py-3 font-bold text-red-600">${egreso.precio.toLocaleString()}</td>
                     <td class="px-4 py-3">${new Date(egreso.fecha).toLocaleDateString()}</td>
                 </tr>
@@ -1104,27 +980,45 @@
             }
         }
 
-        function addExpense(e) {
+        async function addExpense(e) {
             e.preventDefault();
             
             const egreso = {
-                id: Date.now(),
                 nombre: document.getElementById('expense-name').value,
                 precio: parseFloat(document.getElementById('expense-amount').value),
                 categoria: document.getElementById('expense-category').value,
-                joyeroNombre: document.getElementById('jeweler-name').value,
+                joyero_nombre: document.getElementById('jeweler-name').value,
                 fecha: new Date().toISOString()
             };
             
-            egresos.push(egreso);
+            const { error } = await supabase.from('egresos').insert([egreso]);
+            if (error) {
+                alert("Error guardando egreso en Supabase: " + error.message);
+                return;
+            }
+            
             closeExpenseModal();
-            loadExpenses();
+            await loadExpenses();
         }
 
         // Balance
-        function loadBalance() {
-            const ingresos = calcularIngresos();
-            const egresosCalc = calcularEgresos();
+        async function loadBalance() {
+            const { data: ventas, error: ventasError } = await supabase
+                .from('joyas')
+                .select('*')
+                .eq('estado', 'Vendido');
+            
+            const { data: egresos, error: egresosError } = await supabase
+                .from('egresos')
+                .select('*');
+
+            if (ventasError || egresosError) {
+                alert("Error cargando datos para balance");
+                return;
+            }
+
+            const ingresos = calcularIngresos(ventas || []);
+            const egresosCalc = calcularEgresos(egresos || []);
             const totalIngresos = ingresos.joyero + ingresos.taller + ingresos.formacion;
             const totalEgresos = egresosCalc.joyero + egresosCalc.taller + egresosCalc.formacion;
             const balanceNeto = totalIngresos - totalEgresos;
@@ -1158,29 +1052,30 @@
             document.getElementById('formacion-balance').className = `font-bold ${balances.formacion >= 0 ? 'text-green-600' : 'text-red-600'}`;
 
             // Balance por joyero individual
-            loadJoyeroBalance();
+            await loadJoyeroBalance(ventas || [], egresos || []);
         }
 
-        function loadJoyeroBalance() {
+        function loadJoyeroBalance(ventas, egresos) {
             const balanceJoyeros = {};
             const balanceContainer = document.getElementById('balance-joyeros');
             const noBalance = document.getElementById('no-joyero-balance');
 
             // Calcular ingresos por joyero (de las ventas)
-            joyas.filter(joya => joya.estado === 'Venta').forEach(joya => {
+            ventas.forEach(joya => {
                 if (!balanceJoyeros[joya.joyero]) {
                     balanceJoyeros[joya.joyero] = { ingresos: 0, egresos: 0 };
                 }
-                balanceJoyeros[joya.joyero].ingresos += (joya.precio * joya.distribucion.joyero) / 100;
+                const dist = joya.distribucion || { joyero: 35, taller: 35, formacion: 30 };
+                balanceJoyeros[joya.joyero].ingresos += (joya.precio * dist.joyero) / 100;
             });
 
             // Calcular egresos por joyero específico
             egresos.forEach(egreso => {
-                if (egreso.categoria === 'joyero' && egreso.joyeroNombre) {
-                    if (!balanceJoyeros[egreso.joyeroNombre]) {
-                        balanceJoyeros[egreso.joyeroNombre] = { ingresos: 0, egresos: 0 };
+                if (egreso.categoria === 'joyero' && egreso.joyero_nombre) {
+                    if (!balanceJoyeros[egreso.joyero_nombre]) {
+                        balanceJoyeros[egreso.joyero_nombre] = { ingresos: 0, egresos: 0 };
                     }
-                    balanceJoyeros[egreso.joyeroNombre].egresos += egreso.precio;
+                    balanceJoyeros[egreso.joyero_nombre].egresos += egreso.precio;
                 }
             });
 
@@ -1218,12 +1113,11 @@
         }
 
         // Cálculos financieros
-        function calcularIngresos() {
-            const joyasVendidas = joyas.filter(joya => joya.estado === 'Venta');
+        function calcularIngresos(joyasVendidas) {
             let totales = { joyero: 0, taller: 0, formacion: 0 };
             
             joyasVendidas.forEach(joya => {
-                const dist = joya.distribucion;
+                const dist = joya.distribucion || { joyero: 35, taller: 35, formacion: 30 };
                 totales.joyero += (joya.precio * dist.joyero) / 100;
                 totales.taller += (joya.precio * dist.taller) / 100;
                 totales.formacion += (joya.precio * dist.formacion) / 100;
@@ -1232,7 +1126,7 @@
             return totales;
         }
 
-        function calcularEgresos() {
+        function calcularEgresos(egresos) {
             let totales = { joyero: 0, taller: 0, formacion: 0 };
             
             egresos.forEach(egreso => {
