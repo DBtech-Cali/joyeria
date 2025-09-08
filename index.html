@@ -96,7 +96,9 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Foto de la Joya</label>
-                                <input type="file" id="foto" accept="image/*" class="form-input">
+                                <input type="file" id="foto" accept="image/*" class="form-input mb-2">
+                                <p class="text-xs text-gray-500 mb-2">O ingresa una URL de imagen:</p>
+                                <input type="url" id="foto-url" placeholder="https://ejemplo.com/imagen.jpg" class="form-input">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">Joyero</label>
@@ -237,7 +239,6 @@
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Categoría</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Joyero</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Monto</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Fecha</th>
                             </tr>
                         </thead>
                         <tbody id="expenses-table" class="divide-y divide-gray-200">
@@ -592,9 +593,10 @@
             e.preventDefault();
             
             const fileInput = document.getElementById('foto');
+            const urlInput = document.getElementById('foto-url');
             let fotoUrl = "";
 
-            // Manejar subida de imagen si se seleccionó un archivo
+            // Priorizar archivo sobre URL
             if (fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
                 const fileName = `${Date.now()}_${file.name}`;
@@ -606,9 +608,13 @@
                     
                     if (uploadError) {
                         if (uploadError.message.includes('row-level security policy')) {
-                            alert("Error de permisos: Necesitas configurar las políticas de seguridad en Supabase Storage. Por ahora, puedes agregar la joya sin imagen o usar una URL externa.");
-                            // Continuar sin imagen si hay error de permisos
-                            fotoUrl = "";
+                            console.warn("Error de permisos en Storage, intentando con URL externa...");
+                            // Si hay error de permisos, usar URL si está disponible
+                            if (urlInput.value.trim()) {
+                                fotoUrl = urlInput.value.trim();
+                            } else {
+                                fotoUrl = "";
+                            }
                         } else {
                             alert("Error subiendo la imagen: " + uploadError.message);
                             return;
@@ -624,6 +630,9 @@
                     alert("Error procesando la imagen: " + error.message);
                     return;
                 }
+            } else if (urlInput.value.trim()) {
+                // Usar URL externa si no hay archivo
+                fotoUrl = urlInput.value.trim();
             }
             
             const joya = {
@@ -916,8 +925,7 @@
         async function loadExpenses() {
             const { data: egresos, error } = await supabase
                 .from('egreso')
-                .select('*')
-                .order('fecha', { ascending: false });
+                .select('*');
 
             if (error) {
                 console.warn("Error cargando egresos (tabla puede no existir):", error.message);
@@ -992,7 +1000,6 @@
                     </td>
                     <td class="px-4 py-3">${egreso.nombre_joyero || '-'}</td>
                     <td class="px-4 py-3 font-bold text-red-600">${egreso.monto.toLocaleString()}</td>
-                    <td class="px-4 py-3">${new Date(egreso.fecha).toLocaleDateString()}</td>
                 </tr>
             `).join('');
         }
@@ -1027,8 +1034,7 @@
                 concepto: document.getElementById('expense-name').value,
                 monto: parseFloat(document.getElementById('expense-amount').value),
                 categoria: document.getElementById('expense-category').value,
-                nombre_joyero: document.getElementById('jeweler-name').value || null,
-                fecha: new Date().toISOString()
+                nombre_joyero: document.getElementById('jeweler-name').value || null
             };
             
             const { error } = await supabase.from('egreso').insert([egreso]);
