@@ -239,6 +239,7 @@
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Categoría</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Joyero</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Monto</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="expenses-table" class="divide-y divide-gray-200">
@@ -546,6 +547,55 @@
         </div>
     </div>
 
+    <!-- Modal de Edición de Egreso -->
+    <div id="edit-expense-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Editar Egreso</h3>
+                <button onclick="closeEditExpenseModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="edit-expense-form">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Concepto</label>
+                        <input type="text" id="edit-expense-name" required class="form-input" placeholder="Descripción del gasto">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Monto</label>
+                        <input type="number" id="edit-expense-amount" required step="0.01" class="form-input" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Categoría</label>
+                        <select id="edit-expense-category" class="form-input" onchange="toggleEditJewelerName()">
+                            <option value="joyero">Joyero</option>
+                            <option value="taller">Taller</option>
+                            <option value="formacion">Formación</option>
+                        </select>
+                    </div>
+                    <div id="edit-jeweler-name-field">
+                        <label class="block text-sm font-medium mb-1">Nombre del Joyero</label>
+                        <input type="text" id="edit-jeweler-name" class="form-input" placeholder="Nombre completo">
+                    </div>
+                </div>
+                
+                <div class="flex gap-2 mt-6">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                    <button type="button" onclick="deleteExpense()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                        <i class="fas fa-trash"></i> Eliminar Egreso
+                    </button>
+                    <button type="button" onclick="closeEditExpenseModal()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <style>
         .btn-nav {
             padding: 0.5rem 1rem;
@@ -622,6 +672,7 @@
             document.getElementById('add-joya-form').addEventListener('submit', addJoya);
             document.getElementById('expense-form').addEventListener('submit', addExpense);
             document.getElementById('edit-joya-form').addEventListener('submit', saveEditJoya);
+            document.getElementById('edit-expense-form').addEventListener('submit', saveEditExpense);
             document.getElementById('password-input').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') checkPassword();
             });
@@ -1283,6 +1334,11 @@
                     </td>
                     <td class="px-4 py-3">${egreso.nombre_joyero || '-'}</td>
                     <td class="px-4 py-3 font-bold text-red-600">${egreso.monto.toLocaleString()}</td>
+                    <td class="px-4 py-3">
+                        <button onclick="editExpense(${egreso.id})" class="text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
                 </tr>
             `).join('');
         }
@@ -1333,6 +1389,107 @@
             
             closeExpenseModal();
             await loadExpenses();
+        }
+
+        // Variables globales para edición de egresos
+        let currentEditExpenseId = null;
+
+        function editExpense(id) {
+            currentEditExpenseId = id;
+            openEditExpenseModal(id);
+        }
+
+        async function openEditExpenseModal(id) {
+            const { data: egreso, error } = await supabase
+                .from('egreso')
+                .select('*')
+                .eq('id', id)
+                .single();
+            
+            if (error || !egreso) {
+                alert('No se pudo cargar el egreso');
+                return;
+            }
+            
+            // Llenar formulario con datos actuales
+            document.getElementById('edit-expense-name').value = egreso.concepto || '';
+            document.getElementById('edit-expense-amount').value = egreso.monto || '';
+            document.getElementById('edit-expense-category').value = egreso.categoria || 'joyero';
+            document.getElementById('edit-jeweler-name').value = egreso.nombre_joyero || '';
+            
+            // Mostrar/ocultar campo de joyero según categoría
+            toggleEditJewelerName();
+            
+            document.getElementById('edit-expense-modal').classList.remove('hidden');
+        }
+
+        function toggleEditJewelerName() {
+            const category = document.getElementById('edit-expense-category').value;
+            const field = document.getElementById('edit-jeweler-name-field');
+            const input = document.getElementById('edit-jeweler-name');
+            
+            if (category === 'joyero') {
+                field.style.display = 'block';
+                input.required = true;
+            } else {
+                field.style.display = 'none';
+                input.required = false;
+            }
+        }
+
+        function closeEditExpenseModal() {
+            document.getElementById('edit-expense-modal').classList.add('hidden');
+            currentEditExpenseId = null;
+        }
+
+        async function saveEditExpense(e) {
+            e.preventDefault();
+            
+            if (!currentEditExpenseId) return;
+            
+            const updateData = {
+                concepto: document.getElementById('edit-expense-name').value,
+                monto: parseFloat(document.getElementById('edit-expense-amount').value),
+                categoria: document.getElementById('edit-expense-category').value,
+                nombre_joyero: document.getElementById('edit-jeweler-name').value || null
+            };
+            
+            const { error } = await supabase
+                .from('egreso')
+                .update(updateData)
+                .eq('id', currentEditExpenseId);
+            
+            if (error) {
+                alert('Error guardando cambios: ' + error.message);
+                return;
+            }
+            
+            closeEditExpenseModal();
+            await loadExpenses();
+            if (currentView === 'balance') { await loadBalance(); }
+        }
+
+        async function deleteExpense() {
+            if (!currentEditExpenseId) return;
+            
+            const concepto = document.getElementById('edit-expense-name').value;
+            if (!confirm(`¿Estás seguro de eliminar el egreso "${concepto}"? Esta acción no se puede deshacer.`)) {
+                return;
+            }
+            
+            const { error } = await supabase
+                .from('egreso')
+                .delete()
+                .eq('id', currentEditExpenseId);
+            
+            if (error) {
+                alert('Error eliminando egreso: ' + error.message);
+                return;
+            }
+            
+            closeEditExpenseModal();
+            await loadExpenses();
+            if (currentView === 'balance') { await loadBalance(); }
         }
 
         // Balance
