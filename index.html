@@ -411,29 +411,99 @@
         </div>
     </div>
 
-    <!-- Modal de Edición de Distribución -->
-    <div id="dist-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
-        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-            <h3 class="text-xl font-bold mb-4">Editar Distribución</h3>
-            <div class="grid grid-cols-3 gap-2 mb-2">
-                <div>
-                    <label class="block text-xs text-gray-600 mb-1">Joyero (%)</label>
-                    <input type="number" id="edit-dist-joyero" min="0" max="100" step="1" class="border rounded px-2 py-1 w-full" value="35" oninput="updateEditDistributionSum()">
-                </div>
-                <div>
-                    <label class="block text-xs text-gray-600 mb-1">Taller (%)</label>
-                    <input type="number" id="edit-dist-taller" min="0" max="100" step="1" class="border rounded px-2 py-1 w-full" value="35" oninput="updateEditDistributionSum()">
-                </div>
-                <div>
-                    <label class="block text-xs text-gray-600 mb-1">Formación (%)</label>
-                    <input type="number" id="edit-dist-formacion" min="0" max="100" step="1" class="border rounded px-2 py-1 w-full" value="30" oninput="updateEditDistributionSum()">
-                </div>
+    <!-- Modal de Edición Completa de Joya -->
+    <div id="edit-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Editar Joya</h3>
+                <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <p id="edit-dist-total" class="text-xs mb-3 text-gray-600">Suma: 100%</p>
-            <div class="flex gap-2">
-                <button onclick="saveDistribution()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Guardar</button>
-                <button onclick="closeDistModal()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancelar</button>
-            </div>
+            
+            <form id="edit-joya-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Nombre *</label>
+                        <input type="text" id="edit-nombre" required class="form-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Peso (g)</label>
+                        <input type="number" id="edit-peso" step="0.01" class="form-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Color</label>
+                        <input type="text" id="edit-color" class="form-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">URL de la Foto</label>
+                        <input type="url" id="edit-foto" class="form-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Joyero</label>
+                        <select id="edit-joyero" class="form-input">
+                            <!-- Se generará dinámicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Precio *</label>
+                        <input type="number" id="edit-precio" required step="0.01" class="form-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Estado</label>
+                        <select id="edit-estado" class="form-input">
+                            <option value="Catálogo">Catálogo</option>
+                            <option value="Vendido">Vendido</option>
+                            <option value="Alquiler">Alquiler</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Tipo</label>
+                        <select id="edit-tipo" class="form-input">
+                            <option value="arete">Arete</option>
+                            <option value="anillo">Anillo</option>
+                            <option value="pulsera">Pulsera</option>
+                            <option value="dije">Dije</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Comprador</label>
+                        <input type="text" id="edit-comprador" class="form-input">
+                    </div>
+                </div>
+                
+                <!-- Distribución (solo para joyas vendidas) -->
+                <div id="edit-distribution-section" class="mb-4 hidden">
+                    <h4 class="font-bold mb-2">Distribución de Ingresos</h4>
+                    <div class="grid grid-cols-3 gap-2 mb-2">
+                        <div>
+                            <label class="block text-xs text-gray-600 mb-1">Joyero (%)</label>
+                            <input type="number" id="edit-dist-joyero" min="0" max="100" step="1" class="border rounded px-2 py-1 w-full" value="35" oninput="updateEditDistributionSum()">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600 mb-1">Taller (%)</label>
+                            <input type="number" id="edit-dist-taller" min="0" max="100" step="1" class="border rounded px-2 py-1 w-full" value="35" oninput="updateEditDistributionSum()">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600 mb-1">Formación (%)</label>
+                            <input type="number" id="edit-dist-formacion" min="0" max="100" step="1" class="border rounded px-2 py-1 w-full" value="30" oninput="updateEditDistributionSum()">
+                        </div>
+                    </div>
+                    <p id="edit-dist-total" class="text-xs mb-3 text-gray-600">Suma: 100%</p>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                    <button type="button" onclick="deleteJoya()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                        <i class="fas fa-trash"></i> Eliminar Joya
+                    </button>
+                    <button type="button" onclick="closeEditModal()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -551,6 +621,7 @@
             // Event listeners
             document.getElementById('add-joya-form').addEventListener('submit', addJoya);
             document.getElementById('expense-form').addEventListener('submit', addExpense);
+            document.getElementById('edit-joya-form').addEventListener('submit', saveEditJoya);
             document.getElementById('password-input').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') checkPassword();
             });
@@ -896,32 +967,67 @@
         }
 
         let currentEditJoyaId = null;
+        
         function editJoya(id) {
             currentEditJoyaId = id;
-            // Cargar joya y abrir modal de edición de distribución
-            openDistModal(id);
+            openEditModal(id);
         }
 
-        async function openDistModal(id) {
+        async function openEditModal(id) {
             const { data: joya, error } = await supabase
                 .from('joyas')
                 .select('*')
                 .eq('id', id)
                 .single();
+            
             if (error || !joya) {
                 alert('No se pudo cargar la joya');
                 return;
             }
-            const d = joya.joyero_distribucion ? joya.joyero_distribucion.replaceAll('%','').split('/') : ['35','35','30'];
-            document.getElementById('edit-dist-joyero').value = parseInt(d[0] || '35', 10);
-            document.getElementById('edit-dist-taller').value = parseInt(d[1] || '35', 10);
-            document.getElementById('edit-dist-formacion').value = parseInt(d[2] || '30', 10);
-            updateEditDistributionSum();
-            document.getElementById('dist-modal').classList.remove('hidden');
+            
+            // Llenar formulario con datos actuales
+            document.getElementById('edit-nombre').value = joya.nombre || '';
+            document.getElementById('edit-peso').value = joya.peso || '';
+            document.getElementById('edit-color').value = joya.color || '';
+            document.getElementById('edit-foto').value = joya.foto || '';
+            document.getElementById('edit-precio').value = joya.precio || '';
+            document.getElementById('edit-estado').value = joya.estado || 'Catálogo';
+            document.getElementById('edit-tipo').value = joya.tipo || 'arete';
+            document.getElementById('edit-comprador').value = joya.comprador || '';
+            
+            // Generar opciones de joyero
+            generateEditJoyeroOptions();
+            document.getElementById('edit-joyero').value = joya.joyero || 'joyero1';
+            
+            // Mostrar distribución solo si está vendida
+            const distSection = document.getElementById('edit-distribution-section');
+            if (joya.estado === 'Vendido') {
+                distSection.classList.remove('hidden');
+                const d = joya.joyero_distribucion ? joya.joyero_distribucion.replaceAll('%','').split('/') : ['35','35','30'];
+                document.getElementById('edit-dist-joyero').value = parseInt(d[0] || '35', 10);
+                document.getElementById('edit-dist-taller').value = parseInt(d[1] || '35', 10);
+                document.getElementById('edit-dist-formacion').value = parseInt(d[2] || '30', 10);
+                updateEditDistributionSum();
+            } else {
+                distSection.classList.add('hidden');
+            }
+            
+            document.getElementById('edit-modal').classList.remove('hidden');
         }
 
-        function closeDistModal() {
-            document.getElementById('dist-modal').classList.add('hidden');
+        function generateEditJoyeroOptions() {
+            const select = document.getElementById('edit-joyero');
+            select.innerHTML = '';
+            for (let i = 1; i <= 20; i++) {
+                const option = document.createElement('option');
+                option.value = `joyero${i}`;
+                option.textContent = `joyero${i}`;
+                select.appendChild(option);
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
             currentEditJoyaId = null;
         }
 
@@ -935,26 +1041,75 @@
             label.className = `text-xs mb-3 ${total === 100 ? 'text-green-600' : 'text-red-600'}`;
         }
 
-        async function saveDistribution() {
-            if (!currentEditJoyaId) { return; }
-            const j = parseInt(document.getElementById('edit-dist-joyero').value || '0', 10);
-            const t = parseInt(document.getElementById('edit-dist-taller').value || '0', 10);
-            const f = parseInt(document.getElementById('edit-dist-formacion').value || '0', 10);
-            if (j + t + f !== 100) {
-                alert('La distribución debe sumar 100%.');
-                return;
+        async function saveEditJoya(e) {
+            e.preventDefault();
+            
+            if (!currentEditJoyaId) return;
+            
+            const updateData = {
+                nombre: document.getElementById('edit-nombre').value,
+                peso: parseFloat(document.getElementById('edit-peso').value) || 0,
+                color: document.getElementById('edit-color').value,
+                foto: document.getElementById('edit-foto').value,
+                joyero: document.getElementById('edit-joyero').value,
+                precio: parseFloat(document.getElementById('edit-precio').value),
+                estado: document.getElementById('edit-estado').value,
+                tipo: document.getElementById('edit-tipo').value,
+                comprador: document.getElementById('edit-comprador').value
+            };
+            
+            // Si está vendida, incluir distribución
+            if (updateData.estado === 'Vendido') {
+                const j = parseInt(document.getElementById('edit-dist-joyero').value || '0', 10);
+                const t = parseInt(document.getElementById('edit-dist-taller').value || '0', 10);
+                const f = parseInt(document.getElementById('edit-dist-formacion').value || '0', 10);
+                
+                if (j + t + f !== 100) {
+                    alert('La distribución debe sumar 100%.');
+                    return;
+                }
+                
+                updateData.joyero_distribucion = `${j}%/${t}%/${f}%`;
             }
-            const distribString = `${j}%/${t}%/${f}%`;
+            
             const { error } = await supabase
                 .from('joyas')
-                .update({ joyero_distribucion: distribString })
+                .update(updateData)
                 .eq('id', currentEditJoyaId);
+            
             if (error) {
-                alert('Error guardando distribución: ' + error.message);
+                alert('Error guardando cambios: ' + error.message);
                 return;
             }
-            closeDistModal();
+            
+            closeEditModal();
             await loadHistory();
+            if (currentView === 'catalog') { await loadCatalog(); }
+            if (currentView === 'income') { await loadIncome(); }
+            if (currentView === 'balance') { await loadBalance(); }
+        }
+
+        async function deleteJoya() {
+            if (!currentEditJoyaId) return;
+            
+            const joyaNombre = document.getElementById('edit-nombre').value;
+            if (!confirm(`¿Estás seguro de eliminar la joya "${joyaNombre}"? Esta acción no se puede deshacer.`)) {
+                return;
+            }
+            
+            const { error } = await supabase
+                .from('joyas')
+                .delete()
+                .eq('id', currentEditJoyaId);
+            
+            if (error) {
+                alert('Error eliminando joya: ' + error.message);
+                return;
+            }
+            
+            closeEditModal();
+            await loadHistory();
+            if (currentView === 'catalog') { await loadCatalog(); }
             if (currentView === 'income') { await loadIncome(); }
             if (currentView === 'balance') { await loadBalance(); }
         }
