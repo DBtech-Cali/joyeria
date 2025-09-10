@@ -187,6 +187,7 @@
                             <tr>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Joya</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Comprador</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Joyero Autor</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Precio</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Joyero</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Taller</th>
@@ -272,6 +273,57 @@
                     <div class="text-center">
                         <div class="text-3xl font-bold" id="balance-neto">$0</div>
                         <div class="text-sm text-gray-600">Balance Neto</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estadísticas de Joyas -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-xl font-bold mb-4">Estadísticas de Joyas</h3>
+                
+                <!-- Resumen por Estado -->
+                <div class="mb-6">
+                    <h4 class="font-bold text-lg mb-3 text-gray-800">Inventario por Estado</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600" id="joyas-catalogo">0</div>
+                            <div class="text-sm text-gray-600">En Catálogo</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600" id="joyas-vendidas">0</div>
+                            <div class="text-sm text-gray-600">Vendidas</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-purple-600" id="joyas-alquiler">0</div>
+                            <div class="text-sm text-gray-600">En Alquiler</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-800" id="total-joyas">0</div>
+                            <div class="text-sm text-gray-600">Total Joyas</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tipos de Joyas Vendidas -->
+                <div>
+                    <h4 class="font-bold text-lg mb-3 text-gray-800">Tipos de Joyas Vendidas</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-yellow-600" id="aretes-vendidos">0</div>
+                            <div class="text-sm text-gray-600">Aretes</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-pink-600" id="anillos-vendidos">0</div>
+                            <div class="text-sm text-gray-600">Anillos</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-indigo-600" id="pulseras-vendidas">0</div>
+                            <div class="text-sm text-gray-600">Pulseras</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-teal-600" id="dijes-vendidos">0</div>
+                            <div class="text-sm text-gray-600">Dijes</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1243,6 +1295,11 @@
                     <tr>
                         <td class="px-4 py-3">${joya.nombre}</td>
                         <td class="px-4 py-3">${joya.comprador}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                                ${joya.joyero || 'Sin asignar'}
+                            </span>
+                        </td>
                         <td class="px-4 py-3">${joya.precio.toLocaleString()}</td>
                         <td class="px-4 py-3">${((joya.precio * parseFloat(distrib[0])) / 100).toLocaleString()}</td>
                         <td class="px-4 py-3">${((joya.precio * parseFloat(distrib[1])) / 100).toLocaleString()}</td>
@@ -1257,6 +1314,8 @@
 
         // Egresos
         async function loadExpenses() {
+            console.log('Cargando egresos...'); // Debug
+            
             const { data: egresos, error } = await supabase
                 .from('egreso')
                 .select('*');
@@ -1265,6 +1324,8 @@
                 console.warn("Error cargando egresos (tabla puede no existir):", error.message);
                 // Continuar sin egresos si la tabla no existe
             }
+            
+            console.log('Egresos cargados:', egresos); // Debug
 
             const egresosCalc = calcularEgresos(egresos || []);
             const egresosPorJoyero = {};
@@ -1400,6 +1461,8 @@
         }
 
         async function openEditExpenseModal(id) {
+            console.log('Abriendo modal para egreso ID:', id); // Debug
+            
             const { data: egreso, error } = await supabase
                 .from('egreso')
                 .select('*')
@@ -1407,9 +1470,12 @@
                 .single();
             
             if (error || !egreso) {
+                console.error('Error cargando egreso:', error); // Debug
                 alert('No se pudo cargar el egreso');
                 return;
             }
+            
+            console.log('Egreso cargado:', egreso); // Debug
             
             // Llenar formulario con datos actuales
             document.getElementById('edit-expense-name').value = egreso.concepto || '';
@@ -1454,15 +1520,26 @@
                 nombre_joyero: document.getElementById('edit-jeweler-name').value || null
             };
             
+            console.log('Actualizando egreso:', currentEditExpenseId, updateData); // Debug
+            
             const { error } = await supabase
                 .from('egreso')
                 .update(updateData)
                 .eq('id', currentEditExpenseId);
             
             if (error) {
-                alert('Error guardando cambios: ' + error.message);
+                console.error('Error en Supabase:', error); // Debug
+                
+                // Verificar si es un error de RLS
+                if (error.message.includes('row-level security policy')) {
+                    alert('Error de permisos: Necesitas configurar las políticas de seguridad en Supabase para la tabla "egreso". Ve a Supabase > Authentication > Policies y crea una política UPDATE para la tabla "egreso".');
+                } else {
+                    alert('Error guardando cambios: ' + error.message);
+                }
                 return;
             }
+            
+            console.log('Egreso actualizado exitosamente'); // Debug
             
             closeEditExpenseModal();
             await loadExpenses();
@@ -1494,6 +1571,11 @@
 
         // Balance
         async function loadBalance() {
+            // Cargar todas las joyas para estadísticas
+            const { data: todasJoyas, error: joyasError } = await supabase
+                .from('joyas')
+                .select('*');
+            
             const { data: ventas, error: ventasError } = await supabase
                 .from('joyas')
                 .select('*')
@@ -1502,6 +1584,11 @@
             const { data: egresos, error: egresosError } = await supabase
                 .from('egreso')
                 .select('*');
+
+            if (joyasError) {
+                alert("Error cargando joyas para balance: " + joyasError.message);
+                return;
+            }
 
             if (ventasError) {
                 alert("Error cargando ventas para balance: " + ventasError.message);
@@ -1547,8 +1634,57 @@
             document.getElementById('formacion-balance').textContent = `${balances.formacion.toLocaleString()}`;
             document.getElementById('formacion-balance').className = `font-bold ${balances.formacion >= 0 ? 'text-green-600' : 'text-red-600'}`;
 
+            // Estadísticas de joyas
+            const estadisticas = calcularEstadisticasJoyas(todasJoyas || []);
+            document.getElementById('joyas-catalogo').textContent = estadisticas.catalogo;
+            document.getElementById('joyas-vendidas').textContent = estadisticas.vendidas;
+            document.getElementById('joyas-alquiler').textContent = estadisticas.alquiler;
+            document.getElementById('total-joyas').textContent = estadisticas.total;
+
+            // Estadísticas por tipo de joyas vendidas
+            document.getElementById('aretes-vendidos').textContent = estadisticas.tiposVendidos.arete || 0;
+            document.getElementById('anillos-vendidos').textContent = estadisticas.tiposVendidos.anillo || 0;
+            document.getElementById('pulseras-vendidas').textContent = estadisticas.tiposVendidos.pulsera || 0;
+            document.getElementById('dijes-vendidos').textContent = estadisticas.tiposVendidos.dije || 0;
+
             // Balance por joyero individual
             await loadJoyeroBalance(ventas || [], egresos || []);
+        }
+
+        function calcularEstadisticasJoyas(joyas) {
+            const estadisticas = {
+                catalogo: 0,
+                vendidas: 0,
+                alquiler: 0,
+                total: joyas.length,
+                tiposVendidos: {
+                    arete: 0,
+                    anillo: 0,
+                    pulsera: 0,
+                    dije: 0
+                }
+            };
+
+            joyas.forEach(joya => {
+                // Contar por estado
+                switch(joya.estado) {
+                    case 'Catálogo':
+                        estadisticas.catalogo++;
+                        break;
+                    case 'Vendido':
+                        estadisticas.vendidas++;
+                        // Contar tipos de joyas vendidas
+                        if (joya.tipo && estadisticas.tiposVendidos.hasOwnProperty(joya.tipo)) {
+                            estadisticas.tiposVendidos[joya.tipo]++;
+                        }
+                        break;
+                    case 'Alquiler':
+                        estadisticas.alquiler++;
+                        break;
+                }
+            });
+
+            return estadisticas;
         }
 
         function loadJoyeroBalance(ventas, egresos) {
