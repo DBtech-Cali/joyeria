@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amathea</title>
+    <title>Amathea - Sistema de Gestión de Joyería</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         .gradient-bg {
-            background: linear-gradient(135deg, #c9ac5b, #f0dead);
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
         }
         .hidden { display: none !important; }
         .modal-backdrop {
@@ -25,11 +25,9 @@
                 <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
                     💎
                 </div>
-                <div class="flex justify-center">
-                    <div>
-                        <h1 class="text-3xl font-bold">Amathea</h1>
-                        <p class="text-sm opacity-90"> Filigrana con Corazón ♥</p>
-                    </div>
+                <div>
+                    <h1 class="text-3xl font-bold">Amathea</h1>
+                    <p class="text-sm opacity-90">– filigrana con corazón ♥</p>
                 </div>
             </div>
             <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
@@ -963,7 +961,7 @@
                     </div>
                     <h3 class="font-bold text-lg mb-2">${joya.nombre}</h3>
                     <p class="text-gray-600 mb-1">Peso: ${joya.peso}g</p>
-                    <p class="text-2xl font-bold text-green-600 mb-4">${joya.precio.toLocaleString()}</p>
+                    <p class="text-2xl font-bold text-green-600 mb-4">${(parseFloat(joya.precio) || 0).toLocaleString()}</p>
                     <div class="flex gap-2">
                         <button onclick="showJoyaDetail(${joya.id})" class="flex-1 bg-purple-600 text-white py-2 rounded hover:bg-purple-700 flex items-center justify-center gap-2">
                             <i class="fas fa-eye"></i> Ver
@@ -1000,7 +998,7 @@
                 <p><strong>Color:</strong> ${joya.color}</p>
                 <p><strong>Peso:</strong> ${joya.peso}g</p>
                 <p><strong>Joyero:</strong> ${joya.joyero}</p>
-                <p><strong>Precio:</strong> ${joya.precio.toLocaleString()}</p>
+                <p><strong>Precio:</strong> ${(parseFloat(joya.precio) || 0).toLocaleString()}</p>
             `;
             
             document.getElementById('detail-modal').classList.remove('hidden');
@@ -1024,7 +1022,7 @@
             
             currentJoya = joya;
             document.getElementById('sale-title').textContent = `Vender: ${currentJoya.nombre}`;
-            document.getElementById('sale-price').textContent = `Precio: ${currentJoya.precio.toLocaleString()}`;
+            document.getElementById('sale-price').textContent = `Precio: ${(parseFloat(currentJoya.precio) || 0).toLocaleString()}`;
             document.getElementById('buyer-name').value = '';
             document.getElementById('dist-joyero').value = '35';
             document.getElementById('dist-taller').value = '35';
@@ -1111,7 +1109,7 @@
                     <td class="px-4 py-3">${joya.nombre}</td>
                     <td class="px-4 py-3">${joya.tipo}</td>
                     <td class="px-4 py-3">${joya.joyero}</td>
-                    <td class="px-4 py-3">${joya.precio.toLocaleString()}</td>
+                    <td class="px-4 py-3">${(parseFloat(joya.precio) || 0).toLocaleString()}</td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-1 rounded text-xs ${
                             joya.estado === 'Vendido' ? 'bg-green-100 text-green-800' :
@@ -1441,7 +1439,7 @@
                                 ${joya.joyero || 'Sin asignar'}
                             </span>
                         </td>
-                        <td class="px-4 py-3">${joya.precio.toLocaleString()}</td>
+                        <td class="px-4 py-3">${(parseFloat(joya.precio) || 0).toLocaleString()}</td>
                         <td class="px-4 py-3">${((joya.precio * parseFloat(distrib[0])) / 100).toLocaleString()}</td>
                         <td class="px-4 py-3">${((joya.precio * parseFloat(distrib[1])) / 100).toLocaleString()}</td>
                         <td class="px-4 py-3">${((joya.precio * parseFloat(distrib[2])) / 100).toLocaleString()}</td>
