@@ -710,6 +710,19 @@
         let currentView = 'catalog';
         let pendingView = '';
         let currentJoya = null;
+        // Lista configurable de joyeros. Reemplaza con tus nombres reales.
+        // Ejemplo: ["Ana Pérez", "Carlos Gómez", "María Ruiz"]
+        const JOYEROS = [
+            "Amor",
+            "Paciencia",
+            "Sabuduria",
+            "Cariño",
+            "Transformación",
+            "Libertad",
+            "Esperanza",
+            "Ilusión",
+            "Amathea"
+        ];
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
@@ -732,12 +745,16 @@
 
         function generateJoyeroOptions() {
             const select = document.getElementById('joyero');
-            for (let i = 1; i <= 20; i++) {
+            select.innerHTML = '';
+            const nombres = (Array.isArray(JOYEROS) && JOYEROS.length > 0)
+                ? JOYEROS
+                : Array.from({ length: 20 }, (_, idx) => `joyero${idx + 1}`);
+            nombres.forEach(nombre => {
                 const option = document.createElement('option');
-                option.value = `joyero${i}`;
-                option.textContent = `joyero${i}`;
+                option.value = nombre;
+                option.textContent = nombre;
                 select.appendChild(option);
-            }
+            });
         }
 
         // Gestión de vistas
@@ -1100,7 +1117,8 @@
             
             // Generar opciones de joyero
             generateEditJoyeroOptions();
-            document.getElementById('edit-joyero').value = joya.joyero || 'joyero1';
+            const defaultJoyero = (Array.isArray(JOYEROS) && JOYEROS.length > 0) ? JOYEROS[0] : 'joyero1';
+            document.getElementById('edit-joyero').value = joya.joyero || defaultJoyero;
             
             // Mostrar distribución solo si está vendida
             const distSection = document.getElementById('edit-distribution-section');
@@ -1121,12 +1139,15 @@
         function generateEditJoyeroOptions() {
             const select = document.getElementById('edit-joyero');
             select.innerHTML = '';
-            for (let i = 1; i <= 20; i++) {
+            const nombres = (Array.isArray(JOYEROS) && JOYEROS.length > 0)
+                ? JOYEROS
+                : Array.from({ length: 20 }, (_, idx) => `joyero${idx + 1}`);
+            nombres.forEach(nombre => {
                 const option = document.createElement('option');
-                option.value = `joyero${i}`;
-                option.textContent = `joyero${i}`;
+                option.value = nombre;
+                option.textContent = nombre;
                 select.appendChild(option);
-            }
+            });
         }
 
         function closeEditModal() {
