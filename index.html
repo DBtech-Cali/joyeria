@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amathea</title>
+    <title>Amathea - Sistema de Gestión de Joyería</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         .gradient-bg {
-            background: linear-gradient(135deg, #d9b962, #f0e5cc);
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
         }
         .hidden { display: none !important; }
         .modal-backdrop {
@@ -27,11 +27,11 @@
                 </div>
                 <div>
                     <h1 class="text-3xl font-bold">Amathea</h1>
-                    <p class="text-sm opacity-90">Filigrana con Corazón ♥</p>
+                    <p class="text-sm opacity-90">– filigrana con corazón ♥</p>
                 </div>
             </div>
             <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <span class="text-2xl">⭐</span>
+                <span class="text-2xl">✨</span>
             </div>
         </div>
     </div>
@@ -117,7 +117,7 @@
                                 <label class="block text-sm font-medium mb-1">Estado</label>
                                 <select id="estado" class="form-input">
                                     <option value="Catálogo">Catálogo</option>
-                                    <option value="Venta">Venta</option>
+                                    <option value="Vendido">Vendido</option>
                                     <option value="Alquiler">Alquiler</option>
                                     <option value="Donación">Donación</option>
                                 </select>
@@ -288,7 +288,7 @@
                 <!-- Resumen por Estado -->
                 <div class="mb-6">
                     <h4 class="font-bold text-lg mb-3 text-gray-800">Inventario por Estado</h4>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div class="text-center">
                             <div class="text-2xl font-bold text-blue-600" id="joyas-catalogo">0</div>
                             <div class="text-sm text-gray-600">En Catálogo</div>
@@ -300,6 +300,10 @@
                         <div class="text-center">
                             <div class="text-2xl font-bold text-purple-600" id="joyas-alquiler">0</div>
                             <div class="text-sm text-gray-600">En Alquiler</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-orange-600" id="joyas-donacion">0</div>
+                            <div class="text-sm text-gray-600">Donadas</div>
                         </div>
                         <div class="text-center">
                             <div class="text-2xl font-bold text-gray-800" id="total-joyas">0</div>
@@ -1116,7 +1120,9 @@
                         <span class="px-2 py-1 rounded text-xs ${
                             joya.estado === 'Vendido' ? 'bg-green-100 text-green-800' :
                             joya.estado === 'Catálogo' ? 'bg-blue-100 text-blue-800' :
-                            'bg-yellow-100 text-yellow-800'
+                            joya.estado === 'Alquiler' ? 'bg-yellow-100 text-yellow-800' :
+                            joya.estado === 'Donación' ? 'bg-orange-100 text-orange-800' :
+                            'bg-gray-100 text-gray-800'
                         }">
                             ${joya.estado}
                         </span>
@@ -1265,6 +1271,17 @@
                             <i class="fas fa-eye"></i> Ver
                         </button>
                         ${joya.estado === 'Catálogo' ? `<button onclick="showSaleModal(${joya.id})" class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">Vender</button>` : ''}
+                    </div>
+                    <div class="mt-2">
+                        <span class="px-2 py-1 rounded text-xs ${
+                            joya.estado === 'Vendido' ? 'bg-green-100 text-green-800' :
+                            joya.estado === 'Catálogo' ? 'bg-blue-100 text-blue-800' :
+                            joya.estado === 'Alquiler' ? 'bg-yellow-100 text-yellow-800' :
+                            joya.estado === 'Donación' ? 'bg-orange-100 text-orange-800' :
+                            'bg-gray-100 text-gray-800'
+                        }">
+                            ${joya.estado}
+                        </span>
                     </div>
                 </div>
             `).join('');
@@ -1780,6 +1797,7 @@
             document.getElementById('joyas-catalogo').textContent = estadisticas.catalogo;
             document.getElementById('joyas-vendidas').textContent = estadisticas.vendidas;
             document.getElementById('joyas-alquiler').textContent = estadisticas.alquiler;
+            document.getElementById('joyas-donacion').textContent = estadisticas.donacion;
             document.getElementById('total-joyas').textContent = estadisticas.total;
 
             // Estadísticas por tipo de joyas vendidas
@@ -1797,6 +1815,7 @@
                 catalogo: 0,
                 vendidas: 0,
                 alquiler: 0,
+                donacion: 0,
                 total: joyas.length,
                 tiposVendidos: {
                     arete: 0,
@@ -1822,6 +1841,9 @@
                     case 'Alquiler':
                         estadisticas.alquiler++;
                         break;
+                    case 'Donación':
+                        estadisticas.donacion++;
+                        break;
                 }
             });
 
@@ -1838,9 +1860,10 @@
                 if (!balanceJoyeros[joya.joyero]) {
                     balanceJoyeros[joya.joyero] = { ingresos: 0, egresos: 0 };
                 }
-                // Usar distribución por defecto: 35% joyero, 35% taller, 30% formación
-                const dist = { joyero: 35, taller: 35, formacion: 30 };
-                balanceJoyeros[joya.joyero].ingresos += (joya.precio * dist.joyero) / 100;
+                // Usar distribución personalizada guardada en la joya, o distribución por defecto si no existe
+                const distrib = joya.joyero_distribucion ? joya.joyero_distribucion.split('/') : ['35', '35', '30'];
+                const joyeroPorcentaje = parseFloat(distrib[0]);
+                balanceJoyeros[joya.joyero].ingresos += (joya.precio * joyeroPorcentaje) / 100;
             });
 
             // Calcular egresos por joyero específico
