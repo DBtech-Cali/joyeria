@@ -6,6 +6,7 @@
     <title>Amathea - Sistema de Gestión de Joyería</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .gradient-bg {
             background: linear-gradient(135deg, #7c3aed, #ec4899);
@@ -890,7 +891,7 @@
         const JOYEROS = [
             "Amor",
             "Paciencia",
-            "Sabiduria",
+            "Sabuduria",
             "Cariño",
             "Transformación",
             "Libertad",
@@ -2327,50 +2328,168 @@
                         <!-- Estadísticas de Producción -->
                         <div class="bg-white p-3 rounded mb-3">
                             <h5 class="font-medium text-sm mb-2 text-gray-800">📊 Estadísticas de Producción</h5>
-                            <div class="text-xs space-y-1">
+                            <div class="text-xs mb-2">
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Total Creadas:</span>
                                     <span class="font-medium text-blue-600">${stats.totalCreadas}</span>
                                 </div>
-                                <div class="grid grid-cols-2 gap-2 mt-2">
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Vendidas:</span>
-                                        <span class="text-green-600">${stats.vendidas}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Servicios:</span>
-                                        <span class="text-purple-600">${stats.servicios}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Patrocinios:</span>
-                                        <span class="text-pink-600">${stats.patrocinios}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Donadas:</span>
-                                        <span class="text-orange-600">${stats.donadas}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Alquiladas:</span>
-                                        <span class="text-yellow-600">${stats.alquiladas}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">En Catálogo:</span>
-                                        <span class="text-blue-600">${stats.catalogo}</span>
-                                    </div>
-                                </div>
+                            </div>
+                            <div class="h-32 mb-2">
+                                <canvas id="chart-production-${joyero.replace(/\s+/g, '')}" class="w-full h-full"></canvas>
                             </div>
                         </div>
                         
                         <!-- Tipos de Joyas -->
                         <div class="bg-white p-3 rounded">
                             <h5 class="font-medium text-sm mb-2 text-gray-800">🏷️ Tipos de Joyas</h5>
-                            <div class="text-xs text-gray-700">
-                                ${tiposTexto}
+                            <div class="h-40 flex justify-center items-center">
+                                <canvas id="chart-types-${joyero.replace(/\s+/g, '')}" class="max-h-full max-w-full"></canvas>
                             </div>
                         </div>
                     </div>
                 `;
             }).join('');
+            
+            // Crear gráficos después de renderizar
+            setTimeout(() => {
+                Object.entries(balanceJoyeros).forEach(([joyero, data]) => {
+                    createProductionChart(joyero, data.estadisticas);
+                    createTypesChart(joyero, data.estadisticas.tipos);
+                });
+            }, 100);
+        }
+
+        // Funciones para crear gráficos
+        function createProductionChart(joyero, stats) {
+            const canvasId = `chart-production-${joyero.replace(/\s+/g, '')}`;
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Vendidas', 'Servicios', 'Patrocinios', 'Donadas', 'Alquiladas', 'Catálogo'],
+                    datasets: [{
+                        data: [stats.vendidas, stats.servicios, stats.patrocinios, stats.donadas, stats.alquiladas, stats.catalogo],
+                        backgroundColor: [
+                            '#10b981', // Verde - Vendidas
+                            '#8b5cf6', // Púrpura - Servicios
+                            '#ec4899', // Rosa - Patrocinios
+                            '#f97316', // Naranja - Donadas
+                            '#eab308', // Amarillo - Alquiladas
+                            '#3b82f6'  // Azul - Catálogo
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 8
+                                },
+                                maxRotation: 45
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createTypesChart(joyero, tipos) {
+            const canvasId = `chart-types-${joyero.replace(/\s+/g, '')}`;
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Filtrar tipos que tienen valores > 0
+            const tiposConDatos = Object.entries(tipos).filter(([tipo, cantidad]) => cantidad > 0);
+            
+            if (tiposConDatos.length === 0) {
+                // Mostrar mensaje si no hay datos
+                ctx.font = '12px Arial';
+                ctx.fillStyle = '#6b7280';
+                ctx.textAlign = 'center';
+                ctx.fillText('Sin datos', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+            
+            const labels = tiposConDatos.map(([tipo]) => tipo.charAt(0).toUpperCase() + tipo.slice(1));
+            const data = tiposConDatos.map(([, cantidad]) => cantidad);
+            const colors = [
+                '#fbbf24', // Amarillo - Arete
+                '#ec4899', // Rosa - Anillo
+                '#6366f1', // Índigo - Pulsera
+                '#06b6d4', // Cian - Dije
+                '#8b5cf6', // Púrpura - Servicio
+                '#10b981'  // Verde - Patrocinio
+            ];
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, tiposConDatos.length),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    size: 10
+                                },
+                                padding: 10,
+                                usePointStyle: true,
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    return data.labels.map((label, i) => ({
+                                        text: `${label}: ${data.datasets[0].data[i]}`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        strokeStyle: data.datasets[0].backgroundColor[i],
+                                        pointStyle: 'circle'
+                                    }));
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // Cálculos financieros
