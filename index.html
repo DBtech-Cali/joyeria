@@ -528,9 +528,9 @@
             </div>
         </div>
 
-        <!-- Vista Todas (todas las piezas sin importar estado) -->
+        <!-- Vista Todas (joyas tradicionales: catálogo, vendidas, donadas, alquiladas) -->
         <div id="view-all" class="view hidden">
-            <h2 class="text-2xl font-bold mb-4">Todas las Piezas</h2>
+            <h2 class="text-2xl font-bold mb-4">Todas las Joyas</h2>
             <div class="bg-white rounded-lg shadow-md p-4 mb-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -541,8 +541,6 @@
                             <option value="anillo">Anillo</option>
                             <option value="pulsera">Pulsera</option>
                             <option value="dije">Dije</option>
-                            <option value="servicio">Servicio</option>
-                            <option value="patrocinio">Patrocinio</option>
                         </select>
                     </div>
                     <div>
@@ -562,7 +560,7 @@
                 <!-- Piezas -->
             </div>
             <div id="all-empty" class="text-center text-gray-500 py-8 hidden">
-                No hay piezas para mostrar
+                No hay joyas para mostrar
             </div>
         </div>
     </div>
@@ -1519,7 +1517,8 @@
         async function loadAll() {
             const { data: todasJoyas, error } = await supabase
                 .from('joyas')
-                .select('*');
+                .select('*')
+                .in('estado', ['Catálogo', 'Vendido', 'Donación', 'Alquiler']);
             if (error) {
                 console.warn('Error cargando todas las piezas:', error.message);
             }
@@ -2133,7 +2132,7 @@
             document.getElementById('patrocinios-vendidos').textContent = estadisticas.tiposVendidos.patrocinio || 0;
 
             // Balance por joyero individual
-            await loadJoyeroBalance(ventas || [], egresos || []);
+            await loadJoyeroBalance(ventas || [], egresos || [], todasJoyas || []);
         }
 
         function calcularEstadisticasJoyas(joyas) {
@@ -2194,28 +2193,91 @@
             return estadisticas;
         }
 
-        function loadJoyeroBalance(ventas, egresos) {
+        function loadJoyeroBalance(ventas, egresos, todasJoyas) {
             const balanceJoyeros = {};
             const balanceContainer = document.getElementById('balance-joyeros');
             const noBalance = document.getElementById('no-joyero-balance');
 
+            // Inicializar estructura de datos para cada joyero
+            const inicializarJoyero = (nombre) => {
+                if (!balanceJoyeros[nombre]) {
+                    balanceJoyeros[nombre] = {
+                        ingresos: 0,
+                        egresos: 0,
+                        estadisticas: {
+                            totalCreadas: 0,
+                            vendidas: 0,
+                            servicios: 0,
+                            patrocinios: 0,
+                            donadas: 0,
+                            alquiladas: 0,
+                            catalogo: 0,
+                            tipos: {
+                                arete: 0,
+                                anillo: 0,
+                                pulsera: 0,
+                                dije: 0,
+                                servicio: 0,
+                                patrocinio: 0
+                            }
+                        }
+                    };
+                }
+            };
+
+            // Calcular estadísticas generales por joyero (todas las joyas creadas)
+            todasJoyas.forEach(joya => {
+                if (joya.joyero) {
+                    inicializarJoyero(joya.joyero);
+                    const stats = balanceJoyeros[joya.joyero].estadisticas;
+                    
+                    // Contar total creadas
+                    stats.totalCreadas++;
+                    
+                    // Contar por estado
+                    switch(joya.estado) {
+                        case 'Vendido':
+                            stats.vendidas++;
+                            break;
+                        case 'Servicio':
+                            stats.servicios++;
+                            break;
+                        case 'Patrocinio':
+                            stats.patrocinios++;
+                            break;
+                        case 'Donación':
+                            stats.donadas++;
+                            break;
+                        case 'Alquiler':
+                            stats.alquiladas++;
+                            break;
+                        case 'Catálogo':
+                            stats.catalogo++;
+                            break;
+                    }
+                    
+                    // Contar por tipo
+                    if (joya.tipo && stats.tipos.hasOwnProperty(joya.tipo)) {
+                        stats.tipos[joya.tipo]++;
+                    }
+                }
+            });
+
             // Calcular ingresos por joyero (de las ventas, servicios y patrocinios)
             ventas.forEach(joya => {
-                if (!balanceJoyeros[joya.joyero]) {
-                    balanceJoyeros[joya.joyero] = { ingresos: 0, egresos: 0 };
+                if (joya.joyero) {
+                    inicializarJoyero(joya.joyero);
+                    // Usar distribución personalizada guardada en la joya, o distribución por defecto si no existe
+                    const distrib = joya.joyero_distribucion ? joya.joyero_distribucion.split('/') : ['35', '35', '30'];
+                    const joyeroPorcentaje = parseFloat(distrib[0]);
+                    balanceJoyeros[joya.joyero].ingresos += (joya.precio * joyeroPorcentaje) / 100;
                 }
-                // Usar distribución personalizada guardada en la joya, o distribución por defecto si no existe
-                const distrib = joya.joyero_distribucion ? joya.joyero_distribucion.split('/') : ['35', '35', '30'];
-                const joyeroPorcentaje = parseFloat(distrib[0]);
-                balanceJoyeros[joya.joyero].ingresos += (joya.precio * joyeroPorcentaje) / 100;
             });
 
             // Calcular egresos por joyero específico
             egresos.forEach(egreso => {
                 if (egreso.categoria === 'joyero' && egreso.nombre_joyero) {
-                    if (!balanceJoyeros[egreso.nombre_joyero]) {
-                        balanceJoyeros[egreso.nombre_joyero] = { ingresos: 0, egresos: 0 };
-                    }
+                    inicializarJoyero(egreso.nombre_joyero);
                     balanceJoyeros[egreso.nombre_joyero].egresos += egreso.monto;
                 }
             });
@@ -2229,23 +2291,81 @@
             noBalance.classList.add('hidden');
             balanceContainer.innerHTML = Object.entries(balanceJoyeros).map(([joyero, data]) => {
                 const balance = data.ingresos - data.egresos;
+                const stats = data.estadisticas;
+                
+                // Generar lista de tipos con cantidades
+                const tiposTexto = Object.entries(stats.tipos)
+                    .filter(([tipo, cantidad]) => cantidad > 0)
+                    .map(([tipo, cantidad]) => `${tipo}: ${cantidad}`)
+                    .join(', ') || 'Ninguno';
+                
                 return `
                     <div class="bg-gray-50 p-4 rounded-lg border">
-                        <h4 class="font-bold text-lg mb-2">${joyero}</h4>
-                        <div class="space-y-1">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Ingresos:</span>
-                                <span class="text-green-600 font-medium">${data.ingresos.toLocaleString()}</span>
+                        <h4 class="font-bold text-lg mb-3 text-center">${joyero}</h4>
+                        
+                        <!-- Balance Financiero -->
+                        <div class="bg-white p-3 rounded mb-3">
+                            <h5 class="font-medium text-sm mb-2 text-gray-800">💰 Balance Financiero</h5>
+                            <div class="space-y-1 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Ingresos:</span>
+                                    <span class="text-green-600 font-medium">$${data.ingresos.toLocaleString()}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Egresos:</span>
+                                    <span class="text-red-600 font-medium">$${data.egresos.toLocaleString()}</span>
+                                </div>
+                                <div class="border-t pt-1 flex justify-between">
+                                    <span class="font-medium">Balance:</span>
+                                    <span class="font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                        $${balance.toLocaleString()}
+                                    </span>
+                                </div>
                             </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Egresos:</span>
-                                <span class="text-red-600 font-medium">${data.egresos.toLocaleString()}</span>
+                        </div>
+                        
+                        <!-- Estadísticas de Producción -->
+                        <div class="bg-white p-3 rounded mb-3">
+                            <h5 class="font-medium text-sm mb-2 text-gray-800">📊 Estadísticas de Producción</h5>
+                            <div class="text-xs space-y-1">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Total Creadas:</span>
+                                    <span class="font-medium text-blue-600">${stats.totalCreadas}</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mt-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Vendidas:</span>
+                                        <span class="text-green-600">${stats.vendidas}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Servicios:</span>
+                                        <span class="text-purple-600">${stats.servicios}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Patrocinios:</span>
+                                        <span class="text-pink-600">${stats.patrocinios}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Donadas:</span>
+                                        <span class="text-orange-600">${stats.donadas}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Alquiladas:</span>
+                                        <span class="text-yellow-600">${stats.alquiladas}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">En Catálogo:</span>
+                                        <span class="text-blue-600">${stats.catalogo}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="border-t pt-2 flex justify-between">
-                                <span class="font-medium">Balance:</span>
-                                <span class="font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}">
-                                    ${balance.toLocaleString()}
-                                </span>
+                        </div>
+                        
+                        <!-- Tipos de Joyas -->
+                        <div class="bg-white p-3 rounded">
+                            <h5 class="font-medium text-sm mb-2 text-gray-800">🏷️ Tipos de Joyas</h5>
+                            <div class="text-xs text-gray-700">
+                                ${tiposTexto}
                             </div>
                         </div>
                     </div>
