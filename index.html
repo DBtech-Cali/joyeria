@@ -235,7 +235,7 @@
 
             <!-- Filtros para Ingresos -->
             <div class="bg-white rounded-lg shadow-md p-4 mb-4">
-                <h3 class="font-bold mb-3">Filtros para Joyas Vendidas</h3>
+                <h3 class="font-bold mb-3">Filtros para Ingresos</h3>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Filtrar por Joyero</label>
@@ -261,7 +261,7 @@
 
             <!-- Lista de joyas vendidas -->
             <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                <h3 class="text-lg font-bold p-4 bg-gray-50">Joyas Vendidas</h3>
+                <h3 class="text-lg font-bold p-4 bg-gray-50">Ingresos (Ventas, Servicios y Patrocinios)</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-gray-50">
@@ -283,7 +283,7 @@
                     </table>
                 </div>
                 <div id="empty-sales" class="text-center text-gray-500 py-8 hidden">
-                    No hay joyas vendidas
+                    No hay ingresos registrados
                 </div>
             </div>
         </div>
@@ -427,9 +427,9 @@
                     </div>
                 </div>
 
-                <!-- Tipos de Joyas Vendidas -->
+                <!-- Tipos de Ingresos -->
                 <div>
-                    <h4 class="font-bold text-lg mb-3 text-gray-800">Tipos de Joyas Vendidas</h4>
+                    <h4 class="font-bold text-lg mb-3 text-gray-800">Tipos de Ingresos (Ventas, Servicios y Patrocinios)</h4>
                     <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
                         <div class="text-center">
                             <div class="text-xl font-bold text-yellow-600" id="aretes-vendidos">0</div>
@@ -1669,7 +1669,7 @@
             const { data: joyasVendidas, error: ventasError } = await supabase
                 .from('joyas')
                 .select('*')
-                .eq('estado', 'Vendido');
+                .in('estado', ['Vendido', 'Servicio', 'Patrocinio']);
             
             const { data: egresos, error: egresosError } = await supabase
                 .from('egreso')
@@ -2059,7 +2059,7 @@
             const { data: ventas, error: ventasError } = await supabase
                 .from('joyas')
                 .select('*')
-                .eq('estado', 'Vendido');
+                .in('estado', ['Vendido', 'Servicio', 'Patrocinio']);
             
             const { data: egresos, error: egresosError } = await supabase
                 .from('egreso')
@@ -2176,9 +2176,17 @@
                         break;
                     case 'Servicio':
                         estadisticas.servicio++;
+                        // Contar tipos de servicios como ingresos
+                        if (joya.tipo && estadisticas.tiposVendidos.hasOwnProperty(joya.tipo)) {
+                            estadisticas.tiposVendidos[joya.tipo]++;
+                        }
                         break;
                     case 'Patrocinio':
                         estadisticas.patrocinio++;
+                        // Contar tipos de patrocinios como ingresos
+                        if (joya.tipo && estadisticas.tiposVendidos.hasOwnProperty(joya.tipo)) {
+                            estadisticas.tiposVendidos[joya.tipo]++;
+                        }
                         break;
                 }
             });
@@ -2191,7 +2199,7 @@
             const balanceContainer = document.getElementById('balance-joyeros');
             const noBalance = document.getElementById('no-joyero-balance');
 
-            // Calcular ingresos por joyero (de las ventas)
+            // Calcular ingresos por joyero (de las ventas, servicios y patrocinios)
             ventas.forEach(joya => {
                 if (!balanceJoyeros[joya.joyero]) {
                     balanceJoyeros[joya.joyero] = { ingresos: 0, egresos: 0 };
