@@ -121,6 +121,7 @@
                                     <option value="Alquiler">Alquiler</option>
                                     <option value="Donación">Donación</option>
                                     <option value="Servicio">Servicio</option>
+                                    <option value="Patrocinio">Patrocinio</option>
                                 </select>
                             </div>
                             <div>
@@ -131,6 +132,7 @@
                                     <option value="pulsera">Pulsera</option>
                                     <option value="dije">Dije</option>
                                     <option value="servicio">Servicio</option>
+                                    <option value="patrocinio">Patrocinio</option>
                                 </select>
                             </div>
                         </div>
@@ -164,6 +166,7 @@
                             <option value="pulsera">Pulsera</option>
                             <option value="dije">Dije</option>
                             <option value="servicio">Servicio</option>
+                            <option value="patrocinio">Patrocinio</option>
                         </select>
                     </div>
                     <div>
@@ -175,6 +178,7 @@
                             <option value="Alquiler">Alquiler</option>
                             <option value="Donación">Donación</option>
                             <option value="Servicio">Servicio</option>
+                            <option value="Patrocinio">Patrocinio</option>
                         </select>
                     </div>
                     <div>
@@ -391,7 +395,7 @@
                 <!-- Resumen por Estado -->
                 <div class="mb-6">
                     <h4 class="font-bold text-lg mb-3 text-gray-800">Inventario por Estado</h4>
-                    <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-7 gap-4">
                         <div class="text-center">
                             <div class="text-2xl font-bold text-blue-600" id="joyas-catalogo">0</div>
                             <div class="text-sm text-gray-600">En Catálogo</div>
@@ -413,6 +417,10 @@
                             <div class="text-sm text-gray-600">Servicios</div>
                         </div>
                         <div class="text-center">
+                            <div class="text-2xl font-bold text-pink-600" id="joyas-patrocinio">0</div>
+                            <div class="text-sm text-gray-600">Patrocinios</div>
+                        </div>
+                        <div class="text-center">
                             <div class="text-2xl font-bold text-gray-800" id="total-joyas">0</div>
                             <div class="text-sm text-gray-600">Total Joyas</div>
                         </div>
@@ -422,13 +430,13 @@
                 <!-- Tipos de Joyas Vendidas -->
                 <div>
                     <h4 class="font-bold text-lg mb-3 text-gray-800">Tipos de Joyas Vendidas</h4>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
                         <div class="text-center">
                             <div class="text-xl font-bold text-yellow-600" id="aretes-vendidos">0</div>
                             <div class="text-sm text-gray-600">Aretes</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-xl font-bold text-pink-600" id="anillos-vendidos">0</div>
+                            <div class="text-xl font-bold text-rose-600" id="anillos-vendidos">0</div>
                             <div class="text-sm text-gray-600">Anillos</div>
                         </div>
                         <div class="text-center">
@@ -442,6 +450,10 @@
                         <div class="text-center">
                             <div class="text-xl font-bold text-cyan-600" id="servicios-vendidos">0</div>
                             <div class="text-sm text-gray-600">Servicios</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-emerald-600" id="patrocinios-vendidos">0</div>
+                            <div class="text-sm text-gray-600">Patrocinios</div>
                         </div>
                     </div>
                 </div>
@@ -530,6 +542,7 @@
                             <option value="pulsera">Pulsera</option>
                             <option value="dije">Dije</option>
                             <option value="servicio">Servicio</option>
+                            <option value="patrocinio">Patrocinio</option>
                         </select>
                     </div>
                     <div>
@@ -666,6 +679,7 @@
                             <option value="Alquiler">Alquiler</option>
                             <option value="Donación">Donación</option>
                             <option value="Servicio">Servicio</option>
+                            <option value="Patrocinio">Patrocinio</option>
                         </select>
                     </div>
                     <div>
@@ -676,6 +690,7 @@
                             <option value="pulsera">Pulsera</option>
                             <option value="dije">Dije</option>
                             <option value="servicio">Servicio</option>
+                            <option value="patrocinio">Patrocinio</option>
                         </select>
                     </div>
                     <div>
@@ -877,7 +892,7 @@
         const JOYEROS = [
             "Amor",
             "Paciencia",
-            "Sabiduria",
+            "Sabuduria",
             "Cariño",
             "Transformación",
             "Libertad",
@@ -1257,6 +1272,7 @@
                             joya.estado === 'Alquiler' ? 'bg-yellow-100 text-yellow-800' :
                             joya.estado === 'Donación' ? 'bg-orange-100 text-orange-800' :
                             joya.estado === 'Servicio' ? 'bg-purple-100 text-purple-800' :
+                            joya.estado === 'Patrocinio' ? 'bg-pink-100 text-pink-800' :
                             'bg-gray-100 text-gray-800'
                         }">
                             ${joya.estado}
@@ -1550,6 +1566,7 @@
                             joya.estado === 'Alquiler' ? 'bg-yellow-100 text-yellow-800' :
                             joya.estado === 'Donación' ? 'bg-orange-100 text-orange-800' :
                             joya.estado === 'Servicio' ? 'bg-purple-100 text-purple-800' :
+                            joya.estado === 'Patrocinio' ? 'bg-pink-100 text-pink-800' :
                             'bg-gray-100 text-gray-800'
                         }">
                             ${joya.estado}
@@ -2104,6 +2121,7 @@
             document.getElementById('joyas-alquiler').textContent = estadisticas.alquiler;
             document.getElementById('joyas-donacion').textContent = estadisticas.donacion;
             document.getElementById('joyas-servicio').textContent = estadisticas.servicio;
+            document.getElementById('joyas-patrocinio').textContent = estadisticas.patrocinio;
             document.getElementById('total-joyas').textContent = estadisticas.total;
 
             // Estadísticas por tipo de joyas vendidas
@@ -2112,6 +2130,7 @@
             document.getElementById('pulseras-vendidas').textContent = estadisticas.tiposVendidos.pulsera || 0;
             document.getElementById('dijes-vendidos').textContent = estadisticas.tiposVendidos.dije || 0;
             document.getElementById('servicios-vendidos').textContent = estadisticas.tiposVendidos.servicio || 0;
+            document.getElementById('patrocinios-vendidos').textContent = estadisticas.tiposVendidos.patrocinio || 0;
 
             // Balance por joyero individual
             await loadJoyeroBalance(ventas || [], egresos || []);
@@ -2124,13 +2143,15 @@
                 alquiler: 0,
                 donacion: 0,
                 servicio: 0,
+                patrocinio: 0,
                 total: joyas.length,
                 tiposVendidos: {
                     arete: 0,
                     anillo: 0,
                     pulsera: 0,
                     dije: 0,
-                    servicio: 0
+                    servicio: 0,
+                    patrocinio: 0
                 }
             };
 
@@ -2155,6 +2176,9 @@
                         break;
                     case 'Servicio':
                         estadisticas.servicio++;
+                        break;
+                    case 'Patrocinio':
+                        estadisticas.patrocinio++;
                         break;
                 }
             });
