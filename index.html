@@ -120,6 +120,7 @@
                                     <option value="Vendido">Vendido</option>
                                     <option value="Alquiler">Alquiler</option>
                                     <option value="Donación">Donación</option>
+                                    <option value="Servicio">Servicio</option>
                                 </select>
                             </div>
                             <div>
@@ -129,6 +130,7 @@
                                     <option value="anillo">Anillo</option>
                                     <option value="pulsera">Pulsera</option>
                                     <option value="dije">Dije</option>
+                                    <option value="servicio">Servicio</option>
                                 </select>
                             </div>
                         </div>
@@ -148,6 +150,51 @@
         <!-- Vista Historial -->
         <div id="view-history" class="view hidden">
             <h2 class="text-2xl font-bold mb-4">Historial de Joyas</h2>
+            
+            <!-- Filtros para Historial -->
+            <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+                <h3 class="font-bold mb-3">Filtros</h3>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Filtrar por Tipo</label>
+                        <select id="history-filter-tipo" class="form-input">
+                            <option value="">Todos</option>
+                            <option value="arete">Arete</option>
+                            <option value="anillo">Anillo</option>
+                            <option value="pulsera">Pulsera</option>
+                            <option value="dije">Dije</option>
+                            <option value="servicio">Servicio</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Filtrar por Estado</label>
+                        <select id="history-filter-estado" class="form-input">
+                            <option value="">Todos</option>
+                            <option value="Catálogo">Catálogo</option>
+                            <option value="Vendido">Vendido</option>
+                            <option value="Alquiler">Alquiler</option>
+                            <option value="Donación">Donación</option>
+                            <option value="Servicio">Servicio</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Filtrar por Joyero</label>
+                        <select id="history-filter-joyero" class="form-input">
+                            <!-- poblado dinámicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Buscar por Comprador</label>
+                        <input type="text" id="history-filter-comprador" class="form-input" placeholder="Nombre del comprador">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="history-clear-filters" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-full">
+                            Limpiar Filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-white rounded-lg shadow-md overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full">
@@ -182,6 +229,32 @@
                 <!-- Se carga dinámicamente -->
             </div>
 
+            <!-- Filtros para Ingresos -->
+            <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+                <h3 class="font-bold mb-3">Filtros para Joyas Vendidas</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Filtrar por Joyero</label>
+                        <select id="income-filter-joyero" class="form-input">
+                            <!-- poblado dinámicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Buscar por Comprador</label>
+                        <input type="text" id="income-filter-comprador" class="form-input" placeholder="Nombre del comprador">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Buscar por Joya</label>
+                        <input type="text" id="income-filter-joya" class="form-input" placeholder="Nombre de la joya">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="income-clear-filters" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-full">
+                            Limpiar Filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Lista de joyas vendidas -->
             <div class="bg-white rounded-lg shadow-md overflow-hidden">
                 <h3 class="text-lg font-bold p-4 bg-gray-50">Joyas Vendidas</h3>
@@ -197,6 +270,7 @@
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Taller</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Formación</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Distribución</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="sales-table" class="divide-y divide-gray-200">
@@ -223,6 +297,35 @@
             <!-- Resumen de egresos -->
             <div id="expenses-summary" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <!-- Se carga dinámicamente -->
+            </div>
+
+            <!-- Filtros para Egresos -->
+            <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+                <h3 class="font-bold mb-3">Filtros para Egresos</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Filtrar por Categoría</label>
+                        <select id="expenses-filter-categoria" class="form-input">
+                            <option value="">Todas</option>
+                            <option value="joyero">Joyero</option>
+                            <option value="taller">Taller</option>
+                            <option value="formacion">Formación</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Buscar por Concepto</label>
+                        <input type="text" id="expenses-filter-concepto" class="form-input" placeholder="Descripción del gasto">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Buscar por Joyero</label>
+                        <input type="text" id="expenses-filter-joyero" class="form-input" placeholder="Nombre del joyero">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="expenses-clear-filters" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-full">
+                            Limpiar Filtros
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Egresos por joyero -->
@@ -288,7 +391,7 @@
                 <!-- Resumen por Estado -->
                 <div class="mb-6">
                     <h4 class="font-bold text-lg mb-3 text-gray-800">Inventario por Estado</h4>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
                         <div class="text-center">
                             <div class="text-2xl font-bold text-blue-600" id="joyas-catalogo">0</div>
                             <div class="text-sm text-gray-600">En Catálogo</div>
@@ -306,6 +409,10 @@
                             <div class="text-sm text-gray-600">Donadas</div>
                         </div>
                         <div class="text-center">
+                            <div class="text-2xl font-bold text-indigo-600" id="joyas-servicio">0</div>
+                            <div class="text-sm text-gray-600">Servicios</div>
+                        </div>
+                        <div class="text-center">
                             <div class="text-2xl font-bold text-gray-800" id="total-joyas">0</div>
                             <div class="text-sm text-gray-600">Total Joyas</div>
                         </div>
@@ -315,7 +422,7 @@
                 <!-- Tipos de Joyas Vendidas -->
                 <div>
                     <h4 class="font-bold text-lg mb-3 text-gray-800">Tipos de Joyas Vendidas</h4>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div class="text-center">
                             <div class="text-xl font-bold text-yellow-600" id="aretes-vendidos">0</div>
                             <div class="text-sm text-gray-600">Aretes</div>
@@ -331,6 +438,10 @@
                         <div class="text-center">
                             <div class="text-xl font-bold text-teal-600" id="dijes-vendidos">0</div>
                             <div class="text-sm text-gray-600">Dijes</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-cyan-600" id="servicios-vendidos">0</div>
+                            <div class="text-sm text-gray-600">Servicios</div>
                         </div>
                     </div>
                 </div>
@@ -418,6 +529,7 @@
                             <option value="anillo">Anillo</option>
                             <option value="pulsera">Pulsera</option>
                             <option value="dije">Dije</option>
+                            <option value="servicio">Servicio</option>
                         </select>
                     </div>
                     <div>
@@ -553,6 +665,7 @@
                             <option value="Vendido">Vendido</option>
                             <option value="Alquiler">Alquiler</option>
                             <option value="Donación">Donación</option>
+                            <option value="Servicio">Servicio</option>
                         </select>
                     </div>
                     <div>
@@ -562,6 +675,7 @@
                             <option value="anillo">Anillo</option>
                             <option value="pulsera">Pulsera</option>
                             <option value="dije">Dije</option>
+                            <option value="servicio">Servicio</option>
                         </select>
                     </div>
                     <div>
@@ -755,6 +869,9 @@
         let currentView = 'catalog';
         let pendingView = '';
         let currentJoya = null;
+        let allHistoryData = [];
+        let allIncomeData = [];
+        let allExpensesData = [];
         // Lista configurable de joyeros. Reemplaza con tus nombres reales.
         // Ejemplo: ["Ana Pérez", "Carlos Gómez", "María Ruiz"]
         const JOYEROS = [
@@ -778,6 +895,9 @@
             generateJoyeroOptions();
             await loadCatalog();
             setupAllFilters();
+            setupHistoryFilters();
+            setupIncomeFilters();
+            setupExpensesFilters();
             
             // Event listeners
             document.getElementById('add-joya-form').addEventListener('submit', addJoya);
@@ -1099,10 +1219,24 @@
                 .select('*')
                 .order('fecha_creacion', { ascending: false });
             
+            if (error || !joyas || joyas.length === 0) {
+                allHistoryData = [];
+                const table = document.getElementById('history-table');
+                const empty = document.getElementById('empty-history');
+                table.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            
+            allHistoryData = joyas;
+            applyHistoryFilters();
+        }
+
+        function renderHistoryTable(joyas) {
             const table = document.getElementById('history-table');
             const empty = document.getElementById('empty-history');
             
-            if (error || !joyas || joyas.length === 0) {
+            if (!joyas || joyas.length === 0) {
                 table.innerHTML = '';
                 empty.classList.remove('hidden');
                 return;
@@ -1122,6 +1256,7 @@
                             joya.estado === 'Catálogo' ? 'bg-blue-100 text-blue-800' :
                             joya.estado === 'Alquiler' ? 'bg-yellow-100 text-yellow-800' :
                             joya.estado === 'Donación' ? 'bg-orange-100 text-orange-800' :
+                            joya.estado === 'Servicio' ? 'bg-purple-100 text-purple-800' :
                             'bg-gray-100 text-gray-800'
                         }">
                             ${joya.estado}
@@ -1229,6 +1364,142 @@
             });
         }
 
+        // Configurar filtros para Historial
+        function setupHistoryFilters() {
+            const joyeroSelect = document.getElementById('history-filter-joyero');
+            if (!joyeroSelect) return;
+            
+            // Poblar select de joyeros
+            joyeroSelect.innerHTML = '';
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = 'Todos';
+            joyeroSelect.appendChild(defaultOpt);
+            const nombres = (Array.isArray(JOYEROS) && JOYEROS.length > 0) ? JOYEROS : [];
+            nombres.forEach(nombre => {
+                const option = document.createElement('option');
+                option.value = nombre;
+                option.textContent = nombre;
+                joyeroSelect.appendChild(option);
+            });
+
+            // Event listeners para filtros
+            const tipoSelect = document.getElementById('history-filter-tipo');
+            const estadoSelect = document.getElementById('history-filter-estado');
+            const compradorInput = document.getElementById('history-filter-comprador');
+            const clearBtn = document.getElementById('history-clear-filters');
+
+            if (tipoSelect) tipoSelect.addEventListener('change', () => applyHistoryFilters());
+            if (estadoSelect) estadoSelect.addEventListener('change', () => applyHistoryFilters());
+            if (joyeroSelect) joyeroSelect.addEventListener('change', () => applyHistoryFilters());
+            if (compradorInput) compradorInput.addEventListener('input', () => applyHistoryFilters());
+            if (clearBtn) clearBtn.addEventListener('click', () => {
+                tipoSelect.value = '';
+                estadoSelect.value = '';
+                joyeroSelect.value = '';
+                compradorInput.value = '';
+                applyHistoryFilters();
+            });
+        }
+
+        // Configurar filtros para Ingresos
+        function setupIncomeFilters() {
+            const joyeroSelect = document.getElementById('income-filter-joyero');
+            if (!joyeroSelect) return;
+            
+            // Poblar select de joyeros
+            joyeroSelect.innerHTML = '';
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = 'Todos';
+            joyeroSelect.appendChild(defaultOpt);
+            const nombres = (Array.isArray(JOYEROS) && JOYEROS.length > 0) ? JOYEROS : [];
+            nombres.forEach(nombre => {
+                const option = document.createElement('option');
+                option.value = nombre;
+                option.textContent = nombre;
+                joyeroSelect.appendChild(option);
+            });
+
+            // Event listeners para filtros
+            const compradorInput = document.getElementById('income-filter-comprador');
+            const joyaInput = document.getElementById('income-filter-joya');
+            const clearBtn = document.getElementById('income-clear-filters');
+
+            if (joyeroSelect) joyeroSelect.addEventListener('change', () => applyIncomeFilters());
+            if (compradorInput) compradorInput.addEventListener('input', () => applyIncomeFilters());
+            if (joyaInput) joyaInput.addEventListener('input', () => applyIncomeFilters());
+            if (clearBtn) clearBtn.addEventListener('click', () => {
+                joyeroSelect.value = '';
+                compradorInput.value = '';
+                joyaInput.value = '';
+                applyIncomeFilters();
+            });
+        }
+
+        // Configurar filtros para Egresos
+        function setupExpensesFilters() {
+            const categoriaSelect = document.getElementById('expenses-filter-categoria');
+            const conceptoInput = document.getElementById('expenses-filter-concepto');
+            const joyeroInput = document.getElementById('expenses-filter-joyero');
+            const clearBtn = document.getElementById('expenses-clear-filters');
+
+            if (categoriaSelect) categoriaSelect.addEventListener('change', () => applyExpensesFilters());
+            if (conceptoInput) conceptoInput.addEventListener('input', () => applyExpensesFilters());
+            if (joyeroInput) joyeroInput.addEventListener('input', () => applyExpensesFilters());
+            if (clearBtn) clearBtn.addEventListener('click', () => {
+                if (categoriaSelect) categoriaSelect.value = '';
+                if (conceptoInput) conceptoInput.value = '';
+                if (joyeroInput) joyeroInput.value = '';
+                applyExpensesFilters();
+            });
+        }
+
+        // Funciones de aplicación de filtros
+        function applyHistoryFilters() {
+            const tipo = document.getElementById('history-filter-tipo')?.value || '';
+            const estado = document.getElementById('history-filter-estado')?.value || '';
+            const joyero = document.getElementById('history-filter-joyero')?.value || '';
+            const comprador = document.getElementById('history-filter-comprador')?.value.toLowerCase() || '';
+
+            let filteredData = allHistoryData.filter(joya => {
+                return (!tipo || joya.tipo === tipo) &&
+                       (!estado || joya.estado === estado) &&
+                       (!joyero || joya.joyero === joyero) &&
+                       (!comprador || (joya.comprador && joya.comprador.toLowerCase().includes(comprador)));
+            });
+
+            renderHistoryTable(filteredData);
+        }
+
+        function applyIncomeFilters() {
+            const joyero = document.getElementById('income-filter-joyero')?.value || '';
+            const comprador = document.getElementById('income-filter-comprador')?.value.toLowerCase() || '';
+            const joya = document.getElementById('income-filter-joya')?.value.toLowerCase() || '';
+
+            let filteredData = allIncomeData.filter(joya_item => {
+                return (!joyero || joya_item.joyero === joyero) &&
+                       (!comprador || (joya_item.comprador && joya_item.comprador.toLowerCase().includes(comprador))) &&
+                       (!joya || (joya_item.nombre && joya_item.nombre.toLowerCase().includes(joya)));
+            });
+
+            renderIncomeTable(filteredData);
+        }
+
+        function applyExpensesFilters() {
+            const categoria = document.getElementById('expenses-filter-categoria')?.value || '';
+            const concepto = document.getElementById('expenses-filter-concepto')?.value.toLowerCase() || '';
+            const joyero = document.getElementById('expenses-filter-joyero')?.value.toLowerCase() || '';
+
+            let filteredData = allExpensesData.filter(egreso => {
+                return (!categoria || egreso.categoria === categoria) &&
+                       (!concepto || (egreso.concepto && egreso.concepto.toLowerCase().includes(concepto))) &&
+                       (!joyero || (egreso.nombre_joyero && egreso.nombre_joyero.toLowerCase().includes(joyero)));
+            });
+
+            renderExpensesTable(filteredData);
+        }
+
         async function loadAll() {
             const { data: todasJoyas, error } = await supabase
                 .from('joyas')
@@ -1278,6 +1549,7 @@
                             joya.estado === 'Catálogo' ? 'bg-blue-100 text-blue-800' :
                             joya.estado === 'Alquiler' ? 'bg-yellow-100 text-yellow-800' :
                             joya.estado === 'Donación' ? 'bg-orange-100 text-orange-800' :
+                            joya.estado === 'Servicio' ? 'bg-purple-100 text-purple-800' :
                             'bg-gray-100 text-gray-800'
                         }">
                             ${joya.estado}
@@ -1436,6 +1708,20 @@
             `;
 
             // Tabla de joyas vendidas
+            if (!joyasVendidas || joyasVendidas.length === 0) {
+                allIncomeData = [];
+                const salesTable = document.getElementById('sales-table');
+                const emptySales = document.getElementById('empty-sales');
+                salesTable.innerHTML = '';
+                emptySales.classList.remove('hidden');
+                return;
+            }
+            
+            allIncomeData = joyasVendidas;
+            applyIncomeFilters();
+        }
+
+        function renderIncomeTable(joyasVendidas) {
             const salesTable = document.getElementById('sales-table');
             const emptySales = document.getElementById('empty-sales');
             
@@ -1464,6 +1750,11 @@
                         <td class="px-4 py-3">${((joya.precio * parseFloat(distrib[2])) / 100).toLocaleString()}</td>
                         <td class="px-4 py-3">
                             <span class="text-xs">${distrib[0]}%/${distrib[1]}%/${distrib[2]}%</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <button onclick="editJoya(${joya.id})" class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-edit"></i>
+                            </button>
                         </td>
                     </tr>
                 `;
@@ -1528,6 +1819,20 @@
             }
 
             // Tabla de egresos
+            if (!egresos || egresos.length === 0) {
+                allExpensesData = [];
+                const expensesTable = document.getElementById('expenses-table');
+                const emptyExpenses = document.getElementById('empty-expenses');
+                expensesTable.innerHTML = '';
+                emptyExpenses.classList.remove('hidden');
+                return;
+            }
+            
+            allExpensesData = egresos;
+            applyExpensesFilters();
+        }
+
+        function renderExpensesTable(egresos) {
             const expensesTable = document.getElementById('expenses-table');
             const emptyExpenses = document.getElementById('empty-expenses');
             
@@ -1798,6 +2103,7 @@
             document.getElementById('joyas-vendidas').textContent = estadisticas.vendidas;
             document.getElementById('joyas-alquiler').textContent = estadisticas.alquiler;
             document.getElementById('joyas-donacion').textContent = estadisticas.donacion;
+            document.getElementById('joyas-servicio').textContent = estadisticas.servicio;
             document.getElementById('total-joyas').textContent = estadisticas.total;
 
             // Estadísticas por tipo de joyas vendidas
@@ -1805,6 +2111,7 @@
             document.getElementById('anillos-vendidos').textContent = estadisticas.tiposVendidos.anillo || 0;
             document.getElementById('pulseras-vendidas').textContent = estadisticas.tiposVendidos.pulsera || 0;
             document.getElementById('dijes-vendidos').textContent = estadisticas.tiposVendidos.dije || 0;
+            document.getElementById('servicios-vendidos').textContent = estadisticas.tiposVendidos.servicio || 0;
 
             // Balance por joyero individual
             await loadJoyeroBalance(ventas || [], egresos || []);
@@ -1816,12 +2123,14 @@
                 vendidas: 0,
                 alquiler: 0,
                 donacion: 0,
+                servicio: 0,
                 total: joyas.length,
                 tiposVendidos: {
                     arete: 0,
                     anillo: 0,
                     pulsera: 0,
-                    dije: 0
+                    dije: 0,
+                    servicio: 0
                 }
             };
 
@@ -1843,6 +2152,9 @@
                         break;
                     case 'Donación':
                         estadisticas.donacion++;
+                        break;
+                    case 'Servicio':
+                        estadisticas.servicio++;
                         break;
                 }
             });
