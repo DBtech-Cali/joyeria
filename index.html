@@ -1016,24 +1016,15 @@
                 const file = fileInput.files[0];
                 const fileName = `${Date.now()}_${file.name}`;
                 
-                try {
-                    const { error: uploadError } = await supabase.storage
-                        .from('joyas')
-                        .upload(fileName, file);
-                    
-                    if (uploadError) {
-                        if (uploadError.message.includes('row-level security policy')) {
-                            console.warn("Error de permisos en Storage, intentando con URL externa...");
-                            // Si hay error de permisos, usar URL si está disponible
-                            if (urlInput.value.trim()) {
-                                fotoUrl = urlInput.value.trim();
-                            } else {
-                                fotoUrl = "";
-                            }
-                        } else {
-                            alert("Error subiendo la imagen: " + uploadError.message);
-                            return;
-                        }
+                try { const { data, error } = await supabase.storage
+  .from('joyas')
+  .upload(fileName, file);
+
+if (error) {
+  alert('Error subiendo imagen');
+  return;
+}
+        
                     } else {
                         const { data: publicUrl } = supabase.storage
                             .from('joyas')
