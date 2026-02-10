@@ -897,15 +897,6 @@
             "Libertad",
             "Esperanza",
             "Ilusión",
-            "Concentración",
-            "Fortaleza",
-            "Ilustración",
-            "Corazón",
-            "Creación",
-            "Pensamiento",
-            "Paz",
-            "Esfuerzo",
-            "Visión",
             "Amathea"
         ];
 
@@ -1025,7 +1016,8 @@
                 const file = fileInput.files[0];
                 const fileName = `${Date.now()}_${file.name}`;
                 
-                try {const { error: uploadError } = await supabase.storage
+                try {
+                    const { error: uploadError } = await supabase.storage
                         .from('joyas')
                         .upload(fileName, file);
                     
@@ -1042,13 +1034,22 @@
                             alert("Error subiendo la imagen: " + uploadError.message);
                             return;
                         }
-        
                     } else {
-                        const { data: publicUrl } = supabase.storage
+                        // Obtener URL pública de forma robusta (distintas versiones de supabase-js)
+                        const { data: publicUrlData, error: publicUrlError } = supabase.storage
                             .from('joyas')
                             .getPublicUrl(fileName);
-                        
-                        fotoUrl = publicUrl.publicUrl;
+
+                        if (publicUrlError) {
+                            console.error("No se pudo obtener la URL pública de la imagen:", publicUrlError);
+                            fotoUrl = "";
+                        } else if (publicUrlData) {
+                            // Soportar tanto data.publicUrl (v1/v2) como data.publicURL (por si acaso)
+                            fotoUrl = publicUrlData.publicUrl || publicUrlData.publicURL || "";
+                        } else {
+                            console.error("Respuesta inesperada de getPublicUrl:", publicUrlData);
+                            fotoUrl = "";
+                        }
                     }
                 } catch (error) {
                     alert("Error procesando la imagen: " + error.message);
